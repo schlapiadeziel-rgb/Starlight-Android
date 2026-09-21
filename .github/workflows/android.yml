@@ -1,0 +1,41 @@
+name: Android preview APK
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --ignore-scripts
+      - run: npm test
+      - run: gradle --no-daemon :app:assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Starlight-preview-APK
+          path: app/build/outputs/apk/debug/app-debug.apk
+      - name: Publish tagged preview
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp app/build/outputs/apk/debug/app-debug.apk Starlight-0.1.0-preview.apk
+          sha256sum Starlight-0.1.0-preview.apk > SHA256SUMS
+          if ! gh release view v0.1.0 >/dev/null 2>&1; then
+            gh release create v0.1.0 Starlight-0.1.0-preview.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.1.0 preview' --notes-file RELEASE_NOTES.md
+          fi

@@ -1,0 +1,1 @@
+{"name":"starlight-android-tests","private":true,"scripts":{"test":"node tests/astronomy.test.cjs && node tests/ui.test.cjs"},"devDependencies":{"jsdom":"26.0.0"}}
