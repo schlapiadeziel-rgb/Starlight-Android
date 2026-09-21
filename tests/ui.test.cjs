@@ -23,6 +23,8 @@ const run=s=>require('node:vm').runInContext(s,dom.getInternalVMContext());
 run('nativeCameraReady(48);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
 click('calibrate');let range=body().querySelector('input');range.value='5';range.dispatchEvent(new w.Event('input'));assert.equal(JSON.parse(w.localStorage.getItem('calibration')).az,5);
 run("nativeCameraStopped('相机不可用');");assert(!w.document.body.classList.contains('ar'));assert(!camera);
+run('tracking=true; az=90; alt=10; nativeSensorAccuracy(0);');assert(w.document.getElementById('mode').textContent.includes('方向待校准'));assert(!w.document.getElementById('calibrate').hidden);
+click('calibrate');clickText('当前设为北');assert.equal(JSON.parse(w.localStorage.getItem('calibration')).az,-90);run('tracking=false; sync();');
 click('saved');clickText('导出备份');assert.equal(JSON.parse(exported).app,'Starlight');
 run(`nativeImportNotes(JSON.stringify({app:'Starlight',version:1,notes:{Moon:'月球观测'}}));`);assert.equal(JSON.parse(w.localStorage.getItem('notes')).Moon,'月球观测');
 run(`nativeImportNotes(JSON.stringify({app:'Starlight',version:1,notes:{Moon:'不应覆盖'}}));`);assert.equal(JSON.parse(w.localStorage.getItem('notes')).Moon,'月球观测');

@@ -36,8 +36,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk Starlight-0.2.0-preview.apk
-          sha256sum Starlight-0.2.0-preview.apk > SHA256SUMS
-          if ! gh release view v0.2.0 >/dev/null 2>&1; then
-            gh release create v0.2.0 Starlight-0.2.0-preview.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.2.0 preview' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/debug/app-debug.apk Starlight-0.2.1-preview.apk
+          sha256sum Starlight-0.2.1-preview.apk > SHA256SUMS
+          if ! gh release view v0.2.1 >/dev/null 2>&1; then
+            gh release create v0.2.1 Starlight-0.2.1-preview.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.2.1 preview' --notes-file RELEASE_NOTES.md
           fi

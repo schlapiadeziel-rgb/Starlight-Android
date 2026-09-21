@@ -24,6 +24,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     private LocationManager locations;
     private boolean tracking=false, ready=false;
     private long lastFrame=0;
+    private int lastSensorAccuracy=-1;
     private float declination=0;
     private final float[] matrix=new float[9];
 
@@ -155,24 +156,22 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         if(!tracking || !ready || e.timestamp-lastFrame<33000000)return;
         lastFrame=e.timestamp;
         SensorManager.getRotationMatrixFromVector(matrix,e.values);
-        // Rear camera direction is device -Z, expressed in East/North/Up.
-        double east=-matrix[2],north=-matrix[5],up=-matrix[8];
-        double az=(Math.toDegrees(Math.atan2(east,north))+declination+360)%360;
-        double alt=Math.toDegrees(Math.asin(Math.max(-1,Math.min(1,up))));
         int rotation=getWindowManager().getDefaultDisplay().getRotation();
         int x=SensorManager.AXIS_X,y=SensorManager.AXIS_Y;
         if(rotation==android.view.Surface.ROTATION_90){x=SensorManager.AXIS_Y;y=SensorManager.AXIS_MINUS_X;}
         else if(rotation==android.view.Surface.ROTATION_180){x=SensorManager.AXIS_MINUS_X;y=SensorManager.AXIS_MINUS_Y;}
         else if(rotation==android.view.Surface.ROTATION_270){x=SensorManager.AXIS_MINUS_Y;y=SensorManager.AXIS_X;}
-        SensorManager.remapCoordinateSystem(matrix,x,y,screenMatrix);
-        // Device top edge projected onto sky tangent plane gives screen roll.
-        double a=Math.atan2(east,north),h=Math.asin(Math.max(-1,Math.min(1,up)));
-        double rx=Math.cos(a),ry=-Math.sin(a);
-        double ux=-Math.sin(a)*Math.sin(h),uy=-Math.cos(a)*Math.sin(h),uz=Math.cos(h);
-        double roll=Math.atan2(screenMatrix[1]*rx+screenMatrix[4]*ry,screenMatrix[1]*ux+screenMatrix[4]*uy+screenMatrix[7]*uz);
+        if(!SensorManager.remapCoordinateSystem(matrix,x,y,screenMatrix))return;
+        // Rear camera direction is screen -Z, expressed in East/North/Up.
+        double east=-screenMatrix[2],north=-screenMatrix[5],up=-screenMatrix[8];
+        double az=(Math.toDegrees(Math.atan2(east,north))+declination+360)%360;
+        double alt=Math.toDegrees(Math.asin(Math.max(-1,Math.min(1,up))));
+        // Projected zenith supplies screen roll; negate for the Canvas projection convention.
+        double roll=-Math.atan2(screenMatrix[6],screenMatrix[7]);
         js(String.format(Locale.US,"nativeOrientation(%.5f,%.5f,%.5f)",az,alt,roll));
+        if(e.accuracy!=lastSensorAccuracy){lastSensorAccuracy=e.accuracy;js("nativeSensorAccuracy("+e.accuracy+")");}
     }
-    @Override public void onAccuracyChanged(Sensor s,int accuracy){if(accuracy==SensorManager.SENSOR_STATUS_UNRELIABLE)js("toast('指南针需要校准：远离金属，转动手机画 8 字')");}
+    @Override public void onAccuracyChanged(Sensor s,int accuracy){lastSensorAccuracy=accuracy;js("nativeSensorAccuracy("+accuracy+")");}
     @Override public void onProviderEnabled(String p){}
     @Override public void onProviderDisabled(String p){}
     @Override public void onStatusChanged(String p,int s,Bundle b){}
