@@ -2,13 +2,15 @@
 
 免费、离线、无广告的中文观星 App。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.2.2 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.2.3 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.2)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.3)
 
 ## 已实现
+
+- 未来 24 小时离线观测计划：暗夜时段、月面照明比例、月亮与行星观测窗口，点击推荐时刻进入星图。按 10 分钟采样，时间采用手机本地时区；不含天气预测。
 
 - 实验性相机 AR：后置摄像头预览与方向传感器星图叠加，按需申请权限，不拍照、不录音、不上传；退出和后台释放相机。
 - 指向识星和 AR 共用方向校准：可按已知东南西北一键校正、旋转 180°，或微调方向/高度；AR 还可校正视场。
