@@ -2,11 +2,11 @@
 
 免费、离线、无广告的中文观星 App。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.2.1 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.2.2 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.1)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.2)
 
 ## 已实现
 
@@ -45,7 +45,7 @@ Android 8.0+，安装预览 APK。第一次打开先设置实际位置，再点�
 
 本地笔记在卸载/清除数据后会丢失。0.2.0 可在「观测收藏」导出 JSON 备份，再在新版导入；同名记录保留本机版本。0.1.0 没有导出功能，请在卸载前手动复制重要笔记。
 
-预览版使用开发签名，0.1.0 与 0.2.0 可能不能直接覆盖安装；系统提示签名冲突时，先保存旧记录再卸载旧版。正式长期更新仍需维护者配置私有签名密钥。恒星未应用自行、大气折射；不适合科学测量。
+0.2.2 是固定发布签名的基线版。由于 0.1.0～0.2.1 使用过临时开发签名，首次切换到 0.2.2 时可能需要导出记录、卸载旧版再安装；从 0.2.2 开始，后续由官方工作流发布且版本号更高的 APK 可以直接覆盖升级。恒星未应用自行、大气折射；不适合科学测量。
 
 ## 构建
 
@@ -59,7 +59,7 @@ npm test
 
 不依赖第三方 Android UI 库。也可用 Android Studio 打开根目录并使用 Gradle 8.9。仓库未包含 Gradle wrapper 二进制，可用 `gradle wrapper --gradle-version 8.9` 生成。
 
-GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自动创建预览 Release。Actions 使用开发签名，正式发布应配置长期私有签名密钥，禁止将生产私钥提交仓库。
+GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自动创建预览 Release。发布构建使用仓库 Secrets 中的固定私钥，私钥不会提交到源码。签名证书 SHA-256：`3EA20712AB847EE5E2247CD5D4673BFA5A5467071A654E5E6066DA42A4867558`。
 
 ## 架构与测试
 

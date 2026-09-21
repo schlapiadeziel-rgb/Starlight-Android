@@ -27,17 +27,42 @@ jobs:
           node-version: 22
       - run: npm install --ignore-scripts
       - run: npm test
-      - run: gradle --no-daemon :app:assembleDebug
+      - name: Prepare fixed release signing key
+        env:
+          STARLIGHT_SIGNING_BUNDLE: ${{ secrets.STARLIGHT_SIGNING_BUNDLE }}
+        run: |
+          test -n "$STARLIGHT_SIGNING_BUNDLE"
+          mkdir -p "$RUNNER_TEMP/starlight-signing"
+          printf '%s' "$STARLIGHT_SIGNING_BUNDLE" | base64 --decode > "$RUNNER_TEMP/starlight-signing.tgz"
+          tar -xzf "$RUNNER_TEMP/starlight-signing.tgz" -C "$RUNNER_TEMP/starlight-signing"
+          store_password="$(cat "$RUNNER_TEMP/starlight-signing/store_password")"
+          key_password="$(cat "$RUNNER_TEMP/starlight-signing/key_password")"
+          key_alias="$(cat "$RUNNER_TEMP/starlight-signing/alias")"
+          echo "::add-mask::$store_password"
+          echo "::add-mask::$key_password"
+          {
+            echo "STARLIGHT_KEYSTORE_PATH=$RUNNER_TEMP/starlight-signing/starlight-release.p12"
+            echo "STARLIGHT_KEYSTORE_PASSWORD=$store_password"
+            echo "STARLIGHT_KEY_ALIAS=$key_alias"
+            echo "STARLIGHT_KEY_PASSWORD=$key_password"
+          } >> "$GITHUB_ENV"
+      - name: Build signed release APK
+        run: gradle --no-daemon :app:assembleRelease
+      - name: Verify release signature
+        run: |
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk > signing-verification.txt
+          cat signing-verification.txt
+          grep -Fq '3ea20712ab847ee5e2247cd5d4673bfa5a5467071a654e5e6066da42a4867558' signing-verification.txt
       - uses: actions/upload-artifact@v4
         with:
-          name: Starlight-preview-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Starlight-signed-preview-APK
+          path: app/build/outputs/apk/release/app-release.apk
       - name: Publish preview
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/debug/app-debug.apk Starlight-0.2.1-preview.apk
-          sha256sum Starlight-0.2.1-preview.apk > SHA256SUMS
-          if ! gh release view v0.2.1 >/dev/null 2>&1; then
-            gh release create v0.2.1 Starlight-0.2.1-preview.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.2.1 preview' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.2.2-fixed-signing.apk
+          sha256sum Starlight-0.2.2-fixed-signing.apk > SHA256SUMS
+          if ! gh release view v0.2.2 >/dev/null 2>&1; then
+            gh release create v0.2.2 Starlight-0.2.2-fixed-signing.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.2.2 fixed-signing baseline' --notes-file RELEASE_NOTES.md
           fi
