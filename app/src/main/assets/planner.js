@@ -29,6 +29,18 @@
   });
   return {start:+start,end:+start+86400000,dark:windows(samples,s=>s.sun<=-18),moonFraction:A.Illumination('Moon',start).phase_fraction,targets};
  }
- root.SkyPlanner={build};
+ function moonCalendar(A,start,count=8){
+  if(!Number.isFinite(+start)||!Number.isInteger(count)||count<1||count>16)throw new Error('Invalid lunar calendar request');
+  const labels=['新月','上弦月','满月','下弦月'];
+  let event=A.SearchMoonQuarter(start);const events=[];
+  for(let i=0;i<count;i++){
+   events.push({quarter:event.quarter,name:labels[event.quarter],time:+event.time.date});
+   event=A.NextMoonQuarter(event);
+  }
+  const angle=A.MoonPhase(start),fraction=A.Illumination('Moon',start).phase_fraction;
+  const stage=['新月附近','娥眉月 · 渐盈','上弦附近','盈凸月 · 渐盈','满月附近','亏凸月 · 渐亏','下弦附近','残月 · 渐亏'][Math.floor((angle+22.5)/45)%8];
+  return {start:+start,angle,fraction,stage,events};
+ }
+ root.SkyPlanner={build,moonCalendar};
  if(typeof module!=='undefined')module.exports=root.SkyPlanner;
 })(typeof window==='undefined'?globalThis:window);

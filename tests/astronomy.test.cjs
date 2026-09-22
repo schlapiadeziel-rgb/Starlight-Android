@@ -27,3 +27,21 @@ for(const date of ['2026-09-20T12:00:00Z','2000-01-01T12:00:00Z','2040-06-21T00:
 const t=new Date('2026-03-20T12:00:00Z'),obs=new A.Observer(0,0,0),eq=A.Equator('Sun',t,obs,true,true);
 assert(A.Horizon(t,obs,eq.ra,eq.dec,'normal').altitude>87);
 console.log('PASS: projections, azimuth wrap, 48 horizon cross-checks, equinox sanity.');
+// Android screen matrix columns are right, up, front; rear-camera axis is -front.
+for(const [matrix,forward,right,up] of [
+ [[1,0,0,0,0,-1,0,1,0],[0,1,0],[1,0,0],[0,0,1]],
+ [[0,0,-1,-1,0,0,0,1,0],[1,0,0],[0,-1,0],[0,0,1]],
+ [[-1,0,0,0,0,1,0,1,0],[0,-1,0],[-1,0,0],[0,0,1]],
+ [[0,0,1,1,0,0,0,1,0],[-1,0,0],[0,1,0],[0,0,1]],
+ [[1,0,0,0,-1,0,0,0,-1],[0,0,1],[1,0,0],[0,-1,0]],
+ [[0,-1,0,0,0,-1,1,0,0],[0,1,0],[0,0,1],[-1,0,0]]
+]){
+ const b=M.deviceBasis(matrix,0),center=M.project(forward,b,400,800,90);
+ assert(Math.abs(center[0]-200)<1e-9&&Math.abs(center[1]-400)<1e-9);
+ assert(M.project(forward.map((v,i)=>v+right[i]*0.1),b,400,800,90)[0]>200);
+ assert(M.project(forward.map((v,i)=>v+up[i]*0.1),b,400,800,90)[1]<400);
+}
+const corrected=M.deviceBasis([1,0,0,0,0,-1,0,1,0],10);
+assert(Math.abs(Math.atan2(corrected.f[0],corrected.f[1])*180/Math.PI-10)<1e-9);
+assert.equal(M.deviceBasis([NaN],0),null);
+console.log('PASS: automatic north/east/south/west, zenith, screen roll and declination projection.');

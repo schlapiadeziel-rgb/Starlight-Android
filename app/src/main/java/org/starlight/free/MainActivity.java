@@ -53,7 +53,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
                 return new WebResourceResponse("text/plain","UTF-8",null);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {return true;}
-            @Override public void onPageFinished(WebView v,String url){ready=true;}
+            @Override public void onPageFinished(WebView v,String url){ready=true;js("nativeReady()");}
         });
         FrameLayout root=new FrameLayout(this);
         root.setBackgroundColor(0xff070d19);
@@ -73,11 +73,12 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     private void js(String code){runOnUiThread(()->{if(ready) web.evaluateJavascript(code,null);});}
     public class Bridge {
         @JavascriptInterface public void track(boolean enabled){runOnUiThread(()->{
-            tracking=enabled; sensors.unregisterListener(MainActivity.this);
+            tracking=enabled; lastFrame=0; sensors.unregisterListener(MainActivity.this);
             if(enabled){
+                js("nativeTrackingStarted()");
                 Sensor s=sensors.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
                 if(s==null){tracking=false;js("nativeUnavailable()");return;}
-                sensors.registerListener(MainActivity.this,s,SensorManager.SENSOR_DELAY_GAME);
+                if(!sensors.registerListener(MainActivity.this,s,SensorManager.SENSOR_DELAY_GAME)){tracking=false;js("nativeUnavailable()");return;}
                 getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
             }else getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         });}
@@ -162,13 +163,10 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         else if(rotation==android.view.Surface.ROTATION_180){x=SensorManager.AXIS_MINUS_X;y=SensorManager.AXIS_MINUS_Y;}
         else if(rotation==android.view.Surface.ROTATION_270){x=SensorManager.AXIS_MINUS_Y;y=SensorManager.AXIS_X;}
         if(!SensorManager.remapCoordinateSystem(matrix,x,y,screenMatrix))return;
-        // Rear camera direction is screen -Z, expressed in East/North/Up.
-        double east=-screenMatrix[2],north=-screenMatrix[5],up=-screenMatrix[8];
-        double az=(Math.toDegrees(Math.atan2(east,north))+declination+360)%360;
-        double alt=Math.toDegrees(Math.asin(Math.max(-1,Math.min(1,up))));
-        // Projected zenith supplies screen roll; negate for the Canvas projection convention.
-        double roll=-Math.atan2(screenMatrix[6],screenMatrix[7]);
-        js(String.format(Locale.US,"nativeOrientation(%.5f,%.5f,%.5f)",az,alt,roll));
+        // Send screen axes directly: avoid Euler-angle singularities at the zenith.
+        js(String.format(Locale.US,"nativePose([%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f,%.8f],%.6f)",
+            screenMatrix[0],screenMatrix[1],screenMatrix[2],screenMatrix[3],screenMatrix[4],screenMatrix[5],
+            screenMatrix[6],screenMatrix[7],screenMatrix[8],declination));
         if(e.accuracy!=lastSensorAccuracy){lastSensorAccuracy=e.accuracy;js("nativeSensorAccuracy("+e.accuracy+")");}
     }
     @Override public void onAccuracyChanged(Sensor s,int accuracy){lastSensorAccuracy=accuracy;js("nativeSensorAccuracy("+accuracy+")");}

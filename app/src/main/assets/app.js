@@ -6,6 +6,7 @@ try{cfg={...cfg,...JSON.parse(localStorage.getItem('config')||'{}')};notes=JSON.
 let ar=false,arPending=false,cameraFov=45,preArFov=85,preArTracking=false;
 let calibration={az:0,alt:0,scale:1};
 try{calibration={...calibration,...JSON.parse(localStorage.getItem('calibration')||'{}')};}catch(e){}
+let deviceView=null;
 let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=[],toastTimer;
 const chinese={Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',Rigel:'参宿七',Procyon:'南河三',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Spica:'角宿一',Antares:'心宿二',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',Polaris:'北极星',Castor:'北河二',Dubhe:'天枢',Merak:'天璇',Phecda:'天玑',Megrez:'天权',Alioth:'玉衡',Mizar:'开阳',Alkaid:'摇光',Alnitak:'参宿一',Alnilam:'参宿二',Mintaka:'参宿三',Bellatrix:'参宿五',Saiph:'参宿六',Schedar:'王良四',Caph:'王良一',Ruchbah:'阁道三',Segin:'阁道二',Acrux:'十字架二',Mimosa:'十字架三'};
 const stars=STAR_DATA.map(r=>{let ra=r[2]*15*D,d=r[3]*D;return {id:'s'+r[0],name:chinese[r[1]]||r[1],en:r[1],ra:r[2],dec:r[3],mag:r[4],con:r[5],ci:r[6],dist:r[7],hip:r[8],eq:[Math.cos(d)*Math.cos(ra),Math.cos(d)*Math.sin(ra),Math.sin(d)],v:[0,0,0],az:0,alt:0,type:'恒星'};});
@@ -14,7 +15,7 @@ const catalog=[...bodies,...stars],byId=new Map(catalog.map(x=>[x.id,x])),byHip=
 const patterns=[{name:'北斗七星',paths:[[54061,53910,58001,59774,54061],[59774,62956,65378,67301]]},{name:'猎户座',paths:[[27989,25336,25930,26311,26727,27989],[25336,24436,27366,27989],[24436,25930],[27366,26727]]},{name:'仙后座',paths:[[746,3179,4427,6686,8886]]},{name:'天鹅座',paths:[[102098,100453,95947],[104732,100453,94779]]},{name:'天琴座',paths:[[91262,91971,92420,93194,92791,91971]]},{name:'南十字座',paths:[[60718,61084],[62434,59747]]},{name:'狮子座',paths:[[49669,50583,50335,48455,47908],[50583,54872,57632,54879,49669]]},{name:'天蝎座',paths:[[78820,78401,78265],[78401,80112,80763,81266,82396,82514,82729,84143,86228,87073,86670,85927,85696]]}];
 const descriptions={Sun:'太阳是距离地球最近的恒星。切勿用肉眼、望远镜或相机直接观察太阳；星图定位不代表可以安全直视。',Moon:'月球是地球的天然卫星。明暗交界线附近的地形在望远镜中更容易辨认。',Mercury:'水星运行在太阳附近，通常在日出前或日落后的低空短暂出现。',Venus:'金星常被称为启明星或长庚星，是夜空中非常明亮的行星。',Mars:'火星呈现偏橙红的色调。它与地球的距离不断变化，亮度也随之改变。',Jupiter:'木星是太阳系最大的行星。用合适的双筒镜或望远镜可尝试寻找伽利略卫星。',Saturn:'土星拥有显著的环系统，辨认光环需要望远镜。',Uranus:'天王星是冰巨星，观测通常需要双筒镜或望远镜。',Neptune:'海王星距离遥远，需要望远镜观测。',Pluto:'冥王星是柯伊伯带中的矮行星，极难通过小型望远镜目视辨认。'};
 function now(){return new Date(Date.now()+offset);}function observer(){return new A.Observer(cfg.lat,cfg.lon,0);}function save(){localStorage.setItem('config',JSON.stringify(cfg));}function toast(s){$('toast').textContent=s;$('toast').style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.opacity=0,3500);}function fmt(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});}
-function sync(){document.body.classList.toggle('red',cfg.night);$('night').classList.toggle('active',cfg.night);$('place').textContent=cfg.place;$('mode').textContent=ar?'实景 AR · 实验功能':tracking?(sensorAccuracy<2?'手机指向识星 · 方向待校准':'手机指向识星'):'自由探索';$('ar').classList.toggle('active',ar||arPending);$('ar').disabled=arPending;$('calibrate').hidden=!tracking;document.body.classList.toggle('ar',ar);$('track').classList.toggle('active',tracking);$('clock').textContent=fmt(now());$('time').textContent=offset===0?'◷ 现在':'◷ '+fmt(now());if(window.NativeSky)NativeSky.setCoordinates(cfg.lat,cfg.lon);dirty=true;}
+function sync(){document.body.classList.toggle('red',cfg.night);$('night').classList.toggle('active',cfg.night);$('place').textContent=cfg.place;$('mode').textContent=ar?'实景 AR · 实验功能':tracking?(!deviceView?'正在获取自动方向':sensorAccuracy<2?'手机指向识星 · 方向待校准':'手机指向识星'):'自由探索';$('ar').classList.toggle('active',ar||arPending);$('ar').disabled=arPending;$('calibrate').hidden=!tracking;document.body.classList.toggle('ar',ar);$('track').classList.toggle('active',tracking);$('clock').textContent=fmt(now());$('time').textContent=offset===0?'◷ 现在':'◷ '+fmt(now());if(window.NativeSky)NativeSky.setCoordinates(cfg.lat,cfg.lon);dirty=true;}
 function calculate(){
  const t=now(),obs=observer(),rot=A.Rotation_EQJ_HOR(t,obs).rot;
  for(const s of stars){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
@@ -25,8 +26,8 @@ function resize(){width=innerWidth;height=innerHeight;const d=Math.min(devicePix
 function render(){
  if(!dirty)return;dirty=false;hit=[];ctx.clearRect(0,0,width,height);
  const grad=ctx.createLinearGradient(0,0,width,height);grad.addColorStop(0,'#060a15');grad.addColorStop(.5,'#101a30');grad.addColorStop(1,'#070b16');if(!ar){ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);}else{ctx.fillStyle='#04091526';ctx.fillRect(0,0,width,height);}
- const viewAz=tracking?(az+calibration.az+360)%360:az,viewAlt=tracking?Math.max(-89,Math.min(89,alt+calibration.alt)):alt;
- const basis=M.basis(viewAz,viewAlt),p=v=>M.project(v,basis,width,height,fov,roll);
+ const viewAz=az,viewAlt=alt;
+ const basis=tracking&&deviceView?deviceView:M.basis(viewAz,viewAlt),p=v=>M.project(v,basis,width,height,fov,tracking?0:roll);
  // Horizon and altitude circles are actual horizontal coordinates.
  for(let h=0;h<=60;h+=30){ctx.strokeStyle=h===0?'#a9d5c055':'#9abbe410';ctx.lineWidth=1;ctx.beginPath();let prev=null;for(let a=0;a<=360;a+=2){let q=p(M.vec(a,h));if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width/3)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.stroke();}
  ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>{let q=p(M.vec(i*90,0));if(q)ctx.fillText(n,q[0],q[1]+20);});
@@ -49,12 +50,17 @@ function render(){
 let lastDraw=0;function frame(t){if(!document.hidden&&t-lastDraw>=32){render();lastDraw=t;}requestAnimationFrame(frame);}requestAnimationFrame(frame);
 setInterval(()=>{if(!document.hidden&&Date.now()-lastCalc>30000)calculate();},1000);
 function stopTrack(){if(ar||arPending)exitAR();tracking=false;roll=0;if(window.NativeSky)NativeSky.track(false);sync();}
-function nativeOrientation(a,h,r){if(!tracking)return;const smooth=ar?.65:.25;az=(az+M.delta(a,az)*smooth+360)%360;alt+=(h-alt)*smooth;roll=r;dirty=true;}
+function nativeReady(){if(window.NativeSky&&!tracking){tracking=true;deviceView=null;sync();NativeSky.track(true);}}
+function nativeTrackingStarted(){deviceView=null;sync();}
+function nativePose(matrix,declination){
+ if(!tracking)return;const view=M.deviceBasis(matrix,declination);if(!view)return;
+ const firstPose=!deviceView;deviceView=view;az=(Math.atan2(view.f[0],view.f[1])/D+360)%360;alt=Math.asin(Math.max(-1,Math.min(1,view.f[2])))/D;roll=0;dirty=true;if(firstPose)sync();
+}
 function nativeSensorAccuracy(value){sensorAccuracy=Number(value);if(tracking&&sensorAccuracy<2&&!accuracyWarned){accuracyWarned=true;toast('方向精度较低：远离磁铁和金属，将手机缓慢画 8 字校准');}if(sensorAccuracy>=2)accuracyWarned=false;sync();}
 function nativeUnavailable(){stopTrack();toast('此设备缺少方向传感器，可使用拖动模式');}
 function nativeLocation(lat,lon){setPlace(lat,lon,'当前位置');toast('位置已更新');}
 function setPlace(lat,lon,name){cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
-$('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('将手机背面朝向天空；远离磁性手机壳和金属');};
+$('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('方向自动跟随手机背面；请先设置实际位置');};
 $('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
 let pointers=new Map(),start=null,moved=false,lastDist=0;
 canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);start=[e.clientX,e.clientY];moved=false;if(pointers.size===2){let ps=[...pointers.values()];lastDist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);}};
@@ -64,7 +70,7 @@ function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefine
 function openSheet(title){$('sheetTitle').textContent=title;$('sheetBody').replaceChildren();if(!$('sheet').open)$('sheet').showModal();return $('sheetBody');}$('close').onclick=()=>$('sheet').close();
 function selection(s){selected=s;const box=$('selection');box.hidden=false;$('hint').hidden=true;box.replaceChildren();let d=el('div');d.append(el('b',s.name),el('small',s.type+' · '+(s.alt>=0?'地平线上方 ':'地平线下方 ')+Math.abs(s.alt).toFixed(1)+'°'));box.append(d,button('探索 →',()=>details(s)));dirty=true;}
 function focus(s){selection(s);if(!tracking){az=s.az;alt=Math.max(-85,Math.min(85,s.alt));fov=Math.min(fov,65);roll=0;}if($('sheet').open)$('sheet').close();if(s.alt<0)toast('此天体现在位于地平线下，实际天空不可见');dirty=true;}
-function details(s){const b=openSheet(s.name);b.append(el('div',s.en+' / '+s.type,'tag'));b.append(el('p',descriptions[s.id]||('收录于 HYG 星表。所属星座：'+s.con+'。亮度以视星等表示，数值越小越明亮。星图已考虑岁差；恒星自行和大气折射未应用于恒星显示。'),'copy'));const m=el('div',undefined,'metrics');for(const [name,val] of [['方位角',s.az.toFixed(1)+'°'],['高度角',s.alt.toFixed(1)+'°'],['视星等',s.mag.toFixed(2)],['距离',s.color?(s.dist<.1?Math.round(s.dist*149597870.7).toLocaleString()+' km':s.dist.toFixed(2)+' AU'):(s.dist>=100000?'未知':(s.dist*3.26156).toFixed(1)+' 光年')]]){let d=el('div');d.append(el('small',name),el('b',val));m.append(d);}b.append(m);if(s.id==='Moon')b.append(el('p','月面照明比例 '+(s.phase*100).toFixed(1)+'%','copy'));
+function details(s){const b=openSheet(s.name);b.append(el('div',s.en+' / '+s.type,'tag'));b.append(el('p',descriptions[s.id]||('收录于 HYG 星表。所属星座：'+s.con+'。亮度以视星等表示，数值越小越明亮。星图已考虑岁差；恒星自行和大气折射未应用于恒星显示。'),'copy'));const m=el('div',undefined,'metrics');for(const [name,val] of [['方位角',s.az.toFixed(1)+'°'],['高度角',s.alt.toFixed(1)+'°'],['视星等',s.mag.toFixed(2)],['距离',s.color?(s.dist<.1?Math.round(s.dist*149597870.7).toLocaleString()+' km':s.dist.toFixed(2)+' AU'):(s.dist>=100000?'未知':(s.dist*3.26156).toFixed(1)+' 光年')]]){let d=el('div');d.append(el('small',name),el('b',val));m.append(d);}b.append(m);if(s.id==='Moon')b.append(el('p','月面照明比例 '+(s.phase*100).toFixed(1)+'%','copy'),button('月相日历',()=>showMoonCalendar(),'secondary'));
  if(s.color){let text=[];for(const [label,dir] of [['下次升起',1],['下次落下',-1]]){try{let t=A.SearchRiseSet(s.en,observer(),dir,now(),2);text.push(label+'：'+(t?fmt(t.date):'48 小时内无此事件'));}catch(e){text.push(label+'：暂不可计算');}}b.append(el('p',text.join(' / '),'copy'));}
  b.append(button(tracking?'引导我找到它':'在星图中定位',()=>focus(s),'primary'));const note=el('textarea');note.placeholder='记录你的观测、想法或纪念…';note.value=notes[s.id]||'';note.maxLength=2000;b.append(el('label','观测笔记（保存在本机）'),note,button(Object.prototype.hasOwnProperty.call(notes,s.id)?'更新收藏与笔记':'收藏并保存笔记',()=>{notes[s.id]=note.value;localStorage.setItem('notes',JSON.stringify(notes));toast('已保存到观测收藏');},'secondary'));if(Object.prototype.hasOwnProperty.call(notes,s.id))b.append(button('取消收藏',()=>{delete notes[s.id];localStorage.setItem('notes',JSON.stringify(notes));details(s);},'secondary'));
 }
@@ -73,17 +79,26 @@ $('search').onclick=()=>{const b=openSheet('寻找一颗星'),input=el('input'),
 function showVisible(){calculate();const b=openSheet('此刻可见');b.append(button('查看未来 24 小时计划',showPlanner,'secondary'),el('p',cfg.place+' · '+fmt(now())+'。以下天体位于地平线上方；实际可见性受太阳、云层与光污染影响。','copy'));if(bodies[0].alt> -6)b.append(el('p','当前天空较亮，大多数恒星肉眼不可见。切勿直视太阳。','copy'));listObjects(b,catalog.filter(s=>s.alt>5&&(s.color||s.mag<2)).sort((a,b)=>a.mag-b.mag).slice(0,45));}
 function showPlanner(){
  const start=now(),plan=SkyPlanner.build(A,cfg.lat,cfg.lon,start),b=openSheet('未来 24 小时观测计划');
- b.append(button('查看此刻可见天体',showVisible,'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
+ b.append(button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
  if(cfg.place.includes('示例'))b.append(el('p','当前使用示例位置，请先点顶部位置按钮设置实际经纬度。','copy'));
  const spans=xs=>xs.map(x=>fmt(new Date(x.start))+' — '+fmt(new Date(x.end))).join(' / ');
  b.append(el('h3','暗夜时段'),el('p',plan.dark.length?spans(plan.dark):'未来 24 小时没有太阳低于 −18° 的暗夜时段。','copy'),el('p','暗夜仅按太阳高度判断，不代表无月光。当前月面照明比例 '+(plan.moonFraction*100).toFixed(0)+'%。','copy'),el('h3','月亮与行星'),el('p','筛选条件：太阳低于 −6°，目标高于 20°。按 10 分钟采样，边界约有 10 分钟误差；推荐时刻是符合条件时的最高采样点。天王星、海王星通常需要光学设备。','copy'));
  for(const target of plan.targets){const s=byId.get(target.id),card=el('div',undefined,'planner-card');card.append(el('b',s.name));if(target.best){card.append(el('p',spans(target.windows),'copy'),el('small','推荐 '+fmt(new Date(target.best.time))+' · 高度 '+target.best.alt.toFixed(0)+'°'),button('查看推荐时刻星图',()=>{stopTrack();offset=target.best.time-Date.now();calculate();focus(s);},'secondary'));}else card.append(el('p','未来 24 小时无符合条件的时段。','copy'));b.append(card);}
 }
+function showMoonCalendar(start=now()){
+ const lunar=SkyPlanner.moonCalendar(A,start),b=openSheet('月相日历');
+ const dateLabel=d=>d.toLocaleString('zh-CN',{year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});
+ b.append(el('p',dateLabel(start)+' · '+lunar.stage+' · 月面照明 '+(lunar.fraction*100).toFixed(1)+'%','copy'),el('p','以下列出所选时刻之后的 8 次主要月相，均为手机本地时区。月相发生时刻不代表月亮在当地可见；点击可查看所设位置的月亮方向。','copy'));
+ const picker=el('input');picker.type='date';picker.setAttribute('aria-label','月相查询日期');picker.min='1900-01-01';picker.max='2100-12-31';picker.value=new Date(+start-start.getTimezoneOffset()*60000).toISOString().slice(0,10);
+ b.append(el('label','选择日期（按手机本地时间中午查询）'),picker,button('查询月相',()=>{const date=new Date(picker.value+'T12:00:00');if(!picker.value||!Number.isFinite(+date)||date.getFullYear()<1900||date.getFullYear()>2100){toast('请选择 1900～2100 年的有效日期');return;}showMoonCalendar(date);},'secondary'),button('回到今天',()=>showMoonCalendar(new Date()),'secondary'));
+ for(const event of lunar.events){const card=el('div',undefined,'planner-card');card.append(el('b',event.name),el('p',dateLabel(new Date(event.time)),'copy'),button('查看此时月亮',()=>{stopTrack();offset=event.time-Date.now();calculate();focus(byId.get('Moon'));},'secondary'));b.append(card);}
+ b.append(button('返回观测计划',showPlanner,'secondary'));
+}
 $('tonight').onclick=showPlanner;
 $('saved').onclick=()=>{const b=openSheet('观测收藏');const actions=el('div',undefined,'backup-actions');actions.append(button('导出备份',exportBackup),button('导入备份',importBackup));b.append(actions);const objects=Object.keys(notes).map(id=>byId.get(id)).filter(Boolean);if(!objects.length)b.append(el('p','点击任意天体，在详情中保存收藏和观测笔记。记录保存在本机，可导出 JSON 备份并在其他设备导入。','copy'));else listObjects(b,objects);};
 $('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
 $('earlier').onclick=()=>{if(ar)return;offset-=3600000;calculate();};$('later').onclick=()=>{if(ar)return;offset+=3600000;calculate();};$('time').onclick=()=>{if(ar)return;const b=openSheet('穿越时间');b.append(el('p','选择本地日期与时间，查看那一刻的天空。当前 '+fmt(now()),'copy'));const input=el('input');input.type='datetime-local';const date=now();input.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);input.min='1900-01-01T00:00';input.max='2100-12-31T23:59';b.append(input,button('前往这一刻',()=>{const t=new Date(input.value);if(!input.value||!Number.isFinite(+t)||t.getFullYear()<1900||t.getFullYear()>2100){toast('请选择 1900～2100 年的有效时间');return;}offset=+t-Date.now();calculate();$('sheet').close();},'primary'),button('返回现在',()=>{offset=0;calculate();$('sheet').close();},'secondary'));};
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.3 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向不准时点击齿轮，可按已知的东南西北一键校正。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会显示方向引导。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（David Nash / Astronexus，CC BY-SA 4.0，按星等筛选并转为 JSON）；天文计算：Astronomy Engine 2.1.19（Don Cross，MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.4 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会显示方向引导。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（David Nash / Astronexus，CC BY-SA 4.0，按星等筛选并转为 JSON）；天文计算：Astronomy Engine 2.1.19（Don Cross，MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}
@@ -118,14 +133,8 @@ $('ar').onclick=()=>{
 };
 function saveCalibration(){localStorage.setItem('calibration',JSON.stringify(calibration));dirty=true;}
 $('calibrate').onclick=()=>{
- const b=openSheet('方向校准');b.append(el('p','先设置实际位置，取下带磁性的手机壳，并将手机缓慢画 8 字。若方向仍不对，把手机背面朝向一个已知方位，再点击对应按钮。','copy'));
- const cardinals=el('div',undefined,'calibration-grid');
- for(const [label,target] of [['当前设为北',0],['当前设为东',90],['当前设为南',180],['当前设为西',270]])cardinals.append(button(label,()=>{calibration.az=M.delta(target,az);saveCalibration();toast('方向偏移已保存');$('sheet').close();},'secondary'));
- b.append(cardinals,button('方向正好相反：旋转 180°',()=>{calibration.az=M.delta(calibration.az+180,0);saveCalibration();toast('方向已旋转 180°');$('sheet').close();},'secondary'));
- const controls=ar?[['az','左右偏移（度）',-180,180,.5],['alt','上下偏移（度）',-45,45,.5],['scale','视场比例',.7,1.4,.02]]:[['az','方向偏移（度）',-180,180,.5],['alt','高度偏移（度）',-45,45,.5]];
- for(const [key,label,min,max,step] of controls){
-  const input=el('input'),labelNode=el('label',label+' '+calibration[key]);input.type='range';input.min=min;input.max=max;input.step=step;input.value=calibration[key];input.oninput=()=>{calibration[key]=Number(input.value);labelNode.textContent=label+' '+input.value;if(ar)fov=Math.max(12,Math.min(110,cameraFov*calibration.scale));localStorage.setItem('calibration',JSON.stringify(calibration));dirty=true;};b.append(labelNode,input);
- }
- b.append(button('重置全部方向校准',()=>{calibration={az:0,alt:0,scale:1};localStorage.removeItem('calibration');if(ar)fov=cameraFov;dirty=true;$('sheet').close();},'secondary'));
+ const b=openSheet('自动方向状态');b.append(el('p','方向由手机姿态传感器自动确定，并按位置修正磁偏角，无需指定东南西北。旧版保存的方向偏移不再用于星图。','copy'),el('p',sensorAccuracy<2?'传感器报告精度较低。请取下磁性手机壳，远离金属和磁铁，缓慢转动手机后再试。':'传感器正在提供方向；请确保位置设置正确。','copy'));
+ if(ar){const input=el('input'),label=el('label','相机视场比例 '+calibration.scale);input.type='range';input.min=.7;input.max=1.4;input.step=.02;input.value=calibration.scale;input.oninput=()=>{calibration.scale=Number(input.value);label.textContent='相机视场比例 '+input.value;fov=Math.max(12,Math.min(110,cameraFov*calibration.scale));saveCalibration();};b.append(label,input);}
+ b.append(button('重置相机视场',()=>{calibration={az:0,alt:0,scale:1};localStorage.removeItem('calibration');if(ar)fov=cameraFov;dirty=true;$('sheet').close();},'secondary'));
 };
 resize();sync();calculate();
