@@ -4,10 +4,13 @@
   <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />
   <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
   <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+  <uses-permission android:name="android.permission.INTERNET" />
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
   <uses-feature android:name="android.hardware.sensor.compass" android:required="false" />
   <application android:label="星野 · Starlight" android:icon="@drawable/icon" android:theme="@android:style/Theme.Material.NoActionBar" android:allowBackup="false" android:usesCleartextTraffic="false">
     <activity android:name=".MainActivity" android:exported="true" android:screenOrientation="fullUser" android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize">
       <intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter>
     </activity>
+    <provider android:name=".UpdateApkProvider" android:authorities="${applicationId}.updates" android:exported="false" android:grantUriPermissions="true" />
   </application>
 </manifest>

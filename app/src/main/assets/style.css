@@ -13,3 +13,5 @@ body.ar{background:transparent}body.ar canvas{background:transparent}.tools butt
  #selection{padding:6px 10px;border-radius:12px}#selection b{font-size:13px}#selection small{font-size:9px;margin-top:2px}#selection button{min-height:34px}
  #hint{bottom:13px;left:60%;right:95px;font-size:9px}body.ar #hint{bottom:13px}dialog{max-height:96dvh;padding:12px 20px 20px}.sheet-head{top:-12px}h2{font-size:18px;margin:6px 0}#toast{top:55px}
 }
+#help.update-available{position:relative;border-color:#97e4ca;color:#d5fff1}
+#help.update-available::after{content:'';position:absolute;right:1px;top:1px;width:7px;height:7px;background:#61ddac;border-radius:50%}

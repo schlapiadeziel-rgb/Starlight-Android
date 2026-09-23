@@ -7,7 +7,7 @@ for(const f of ['astronomy.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js
 let tracked=0,located=0,stopped=0;
 w.NativeSky={setCoordinates(){},track(){tracked++},locate(){located++},stopLocation(){stopped++}};
 const run=s=>vm.runInContext(s,dom.getInternalVMContext()),clickText=t=>{const b=[...w.document.querySelectorAll('#sheetBody button')].find(x=>x.textContent===t);assert(b,t);b.click();};
-run('nativeReady();');assert.equal(tracked,1);assert.equal(w.document.getElementById('sheetTitle').textContent,'首次设置观测位置');assert(w.document.getElementById('sheetBody').textContent.includes('不会上传'));
+run('nativeReady();');assert.equal(tracked,1);assert.equal(w.document.getElementById('sheetTitle').textContent,'首次设置观测位置');assert(w.document.getElementById('sheetBody').textContent.includes('主动查看联网天气'));
 clickText('使用当前位置');assert.equal(located,1);assert.equal(run('cfg.place'),'北京 · 示例位置');
 run('nativeLocationError("未获定位权限")');assert(w.document.getElementById('toast').textContent.includes('手动填写'));
 clickText('手动设置经纬度');let inputs=w.document.querySelectorAll('#sheetBody input');inputs[0].value='-34';inputs[1].value='151';clickText('保存位置');assert.equal(stopped,1);assert.equal(run('cfg.lat'),-34);assert(!w.document.getElementById('sheet').open);

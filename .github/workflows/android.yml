@@ -61,8 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.0-sky-visuals.apk
-          sha256sum Starlight-0.3.0-sky-visuals.apk > SHA256SUMS
-          if ! gh release view v0.3.0 >/dev/null 2>&1; then
-            gh release create v0.3.0 Starlight-0.3.0-sky-visuals.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.0 adaptive sky visuals' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.1-in-app-updates.apk
+          sha256sum Starlight-0.3.1-in-app-updates.apk > SHA256SUMS
+          if ! gh release view v0.3.1 >/dev/null 2>&1; then
+            gh release create v0.3.1 Starlight-0.3.1-in-app-updates.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.1 updates and forecast' --notes-file RELEASE_NOTES.md
           fi

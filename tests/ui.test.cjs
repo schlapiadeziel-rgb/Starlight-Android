@@ -22,7 +22,7 @@ assert(w.document.getElementById('grid').classList.contains('active'));click('gr
 require('node:vm').runInContext('render(); nativeLocation(0,0); tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0); render(); nativeUnavailable();',dom.getInternalVMContext());
 assert.equal(w.document.getElementById('mode').textContent,'自由探索');
 click('ar');assert(w.document.getElementById('toast').textContent.includes('新版安卓'));
-let camera=false,exported=null;w.NativeSky={setCoordinates(){},track(){},camera(v){camera=v;},exportNotes(s){exported=s;},importNotes(){}};
+let camera=false,exported=null,checks=0,downloads=0,installs=0,weatherCoords=null;w.NativeSky={setCoordinates(){},track(){},camera(v){camera=v;},exportNotes(s){exported=s;},importNotes(){},checkUpdate(){checks++},downloadUpdate(){downloads++},installUpdate(){installs++},hasVerifiedUpdate(){return false},fetchWeather(lat,lon){weatherCoords=[lat,lon]}};
 click('later');click('ar');clickText('开启相机 AR');assert(camera);
 const run=s=>require('node:vm').runInContext(s,dom.getInternalVMContext());
 run('nativeCameraReady(48);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
@@ -42,6 +42,12 @@ click('saved');clickText('导出备份');assert.equal(JSON.parse(exported).app,'
 run(`nativeImportNotes(JSON.stringify({app:'Starlight',version:1,notes:{Moon:'月球观测'}}));`);assert.equal(JSON.parse(w.localStorage.getItem('notes')).Moon,'月球观测');
 run(`nativeImportNotes(JSON.stringify({app:'Starlight',version:1,notes:{Moon:'不应覆盖'}}));`);assert.equal(JSON.parse(w.localStorage.getItem('notes')).Moon,'月球观测');
 click('tonight');clickText('月相日历');assert.equal(w.document.getElementById('sheetTitle').textContent,'月相日历');assert.equal(body().querySelectorAll('.planner-card').length,8);
+click('tonight');clickText('联网查看云量和降水');clickText('获取未来 24 小时预报');assert.deepEqual(weatherCoords,[run('cfg.lat'),run('cfg.lon')]);
+run('nativeWeatherResult(JSON.stringify({latitude:-33.9,longitude:151.2,retrieved:Date.now(),currentTime:Date.now(),cloud:15,precipitation:0,temperature:18,hours:[[Date.now()+3600000,20,10,14000]]}))');assert(text().includes('Open-Meteo'));assert(text().includes('能见度 14.0 km'));
+click('help');clickText('检查更新');clickText('检查新版本');assert(checks>0);
+run("nativeUpdateAvailable('0.3.1','0.3.2','1234567')");assert(text().includes('新版 0.3.2'));clickText('下载并验证 0.3.2');assert.equal(downloads,1);
+run("nativeUpdateProgress('50')");assert(text().includes('50%'));run("nativeUpdateReady('0.3.2')");clickText('打开系统安装界面');assert.equal(installs,1);
+click('tonight');clickText('月相日历');
 let dateInput=body().querySelector('input');dateInput.value='2026-12-30';clickText('查询月相');assert(text().includes('2027'));dateInput=body().querySelector('input');dateInput.value='';clickText('查询月相');assert(w.document.getElementById('toast').textContent.includes('有效日期'));
 clickText('查看此时月亮');assert.equal(run('selected.id'),'Moon');assert.equal(run('tracking'),false);assert(!w.document.getElementById('sheet').open);assert.notEqual(w.document.getElementById('time').textContent,'◷ 现在');
 click('time');clickText('返回现在');assert.equal(w.document.getElementById('time').textContent,'◷ 现在');

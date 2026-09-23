@@ -113,10 +113,11 @@ function stopTrack(){if(ar||arPending)exitAR();tracking=false;roll=0;if(window.N
 function nativeReady(){
  if(!window.NativeSky)return;
  if(!tracking){tracking=true;deviceView=null;sync();NativeSky.track(true);}
+ maybeCheckUpdate();
  if(cfg.place.includes('示例')&&!localStorage.getItem('locationSetupSeen')){
   localStorage.setItem('locationSetupSeen','1');
   const b=openSheet('首次设置观测位置');
-  b.append(el('p','星图会自动跟随手机方向。要让它与当地天空对应，还需要你的观测位置。位置只在本机用于计算，不会上传。','copy'),
+  b.append(el('p','星图会自动跟随手机方向。要让它与当地天空对应，还需要你的观测位置。星图计算在本机完成；只有你主动查看联网天气时，所设经纬度才会发给 Open-Meteo。','copy'),
    button('使用当前位置',()=>{NativeSky.locate();toast('正在获取位置；如未授权，请选择允许定位');},'primary'),
    button('手动设置经纬度',()=>{$('loc').click();},'secondary'),
    button('稍后再设置',()=>{$('sheet').close();toast('当前仍是北京示例天空，不能用于当地识星');},'secondary'));
@@ -150,9 +151,28 @@ function listObjects(parent,objects){if(!objects.length){parent.append(el('p','�
 function listDeepSky(parent){parent.replaceChildren();parent.append(el('p','110 个梅西耶天体。目录亮度不能保证肉眼可见；请结合高度、天空亮度和观测设备判断。','copy'));listObjects(parent,deepSky);}
 $('search').onclick=()=>{const b=openSheet('探索天空'),input=el('input'),results=el('div');input.placeholder='星座 / English / HIP / M31 / NGC224';input.type='search';input.setAttribute('aria-label','搜索天体');b.append(input,button('浏览 88 星座',()=>{results.replaceChildren();listObjects(results,constellations);},'secondary'),button('浏览梅西耶 110',()=>listDeepSky(results),'secondary'),results);const search=()=>{const q=input.value.trim().toLowerCase();results.replaceChildren();let result=q?catalog.filter(s=>(s.name+' '+s.en+' '+(s.con||'')+' '+(s.constellation?s.abbr:s.deepSky?s.designation+' NGC'+s.ngc:'HIP '+s.hip)).toLowerCase().includes(q)):[...bodies,...deepSky.filter(s=>s.mag<=5).slice(0,10),...stars.slice(0,15)];listObjects(results,result.slice(0,60));if(result.length>60)results.append(el('p','显示前 60 项，请输入更完整的名称。','copy'));};input.oninput=search;search();};
 function showVisible(){calculate();const b=openSheet('此刻可见');b.append(button('查看未来 24 小时计划',showPlanner,'secondary'),el('p',cfg.place+' · '+fmt(now())+'。以下天体位于地平线上方；实际可见性受太阳、云层与光污染影响。','copy'));if(bodies[0].alt> -6)b.append(el('p','当前天空较亮，大多数恒星肉眼不可见。切勿直视太阳。','copy'));listObjects(b,catalog.filter(s=>s.alt>5&&!s.deepSky&&!s.constellation&&(s.color||s.mag<2)).sort((a,b)=>a.mag-b.mag).slice(0,45));if(bodies[0].alt< -6){b.append(el('h3','位置较高的深空目标'),el('p','部分需要望远镜；目录总星等不能代表肉眼可见。','copy'));listObjects(b,deepSky.filter(s=>s.alt>20&&s.mag<=6.5).sort((a,b)=>a.mag-b.mag).slice(0,15));}}
+let weatherStatus=null;
+function weatherSheetVisible(){return $('sheet').open&&$('sheetTitle').textContent==='联网观测天气'&&weatherStatus&&weatherStatus.isConnected;}
+function showWeather(){
+ const b=openSheet('联网观测天气');weatherStatus=el('div',undefined,'copy');
+ b.append(el('p','按所设经纬度查询 Open-Meteo 天气模型。只在点击下方按钮时发送坐标；预报从现实时间起算，不随星图穿越时间变化。云量、降水概率和能见度均为预报，不能代表现场天空，也不含光污染或地形遮挡。','copy'),el('p','观测位置：'+cfg.place+'（'+cfg.lat.toFixed(2)+'°, '+cfg.lon.toFixed(2)+'°）','copy'),weatherStatus);
+ if(cfg.place.includes('示例')){weatherStatus.textContent='请先设置实际观测位置，避免获取北京示例天气。';b.append(button('设置位置',()=>$('loc').click(),'primary'));return;}
+ if(!window.NativeSky||!NativeSky.fetchWeather){weatherStatus.textContent='联网天气需在安卓 App 中查看。';return;}
+ b.append(button('获取未来 24 小时预报',()=>{weatherStatus.replaceChildren(el('p','正在获取天气模型…','copy'));NativeSky.fetchWeather(cfg.lat,cfg.lon);},'primary'));
+}
+function nativeWeatherResult(text){
+ if(!weatherSheetVisible())return;
+ try{
+  const d=JSON.parse(text);if(!Array.isArray(d.hours)||d.hours.length<1)throw Error('empty');
+  const fmtValue=(v,unit)=>Number.isFinite(v)&&v>=0?Math.round(v)+unit:'暂无';
+  weatherStatus.replaceChildren(el('p','来源：Open-Meteo · 获取于 '+fmt(new Date(d.retrieved))+' · 模型网格 '+Number(d.latitude).toFixed(2)+'°, '+Number(d.longitude).toFixed(2)+'°','copy'),el('p','目前模型：云量 '+fmtValue(d.cloud,'%')+' · 降水 '+(Number.isFinite(d.precipitation)&&d.precipitation>=0?d.precipitation.toFixed(1)+' mm':'暂无')+' · 气温 '+(Number.isFinite(d.temperature)&&d.temperature>-100?d.temperature.toFixed(1)+'°C':'暂无'),'copy'),el('h3','未来 24 小时 · 约每 3 小时'));
+  for(const row of d.hours){if(!Array.isArray(row)||row.length!==4||!Number.isFinite(row[0]))continue;const card=el('div',undefined,'planner-card'),visibility=Number.isFinite(row[3])&&row[3]>=0?(row[3]/1000).toFixed(1)+' km':'暂无';card.append(el('b',fmt(new Date(row[0]))),el('p','云量 '+fmtValue(row[1],'%')+' · 降水概率 '+fmtValue(row[2],'%')+' · 模型能见度 '+visibility,'copy'));weatherStatus.append(card);}
+ }catch(e){weatherStatus.textContent='天气数据暂不可用，请稍后重试。';}
+}
+function nativeWeatherError(message){if(weatherSheetVisible())weatherStatus.textContent=message;}
 function showPlanner(){
  const start=now(),plan=SkyPlanner.build(A,cfg.lat,cfg.lon,start),b=openSheet('未来 24 小时观测计划');
- b.append(button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
+ b.append(button('联网查看云量和降水',showWeather,'secondary'),button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
  if(cfg.place.includes('示例'))b.append(el('p','当前使用示例位置，请先点顶部位置按钮设置实际经纬度。','copy'));
  const spans=xs=>xs.map(x=>fmt(new Date(x.start))+' — '+fmt(new Date(x.end))).join(' / ');
  b.append(el('h3','暗夜时段'),el('p',plan.dark.length?spans(plan.dark):'未来 24 小时没有太阳低于 −18° 的暗夜时段。','copy'),el('p','暗夜仅按太阳高度判断，不代表无月光。当前月面照明比例 '+(plan.moonFraction*100).toFixed(0)+'%。','copy'),el('h3','月亮与行星'),el('p','筛选条件：太阳低于 −6°，目标高于 20°。按 10 分钟采样，边界约有 10 分钟误差；推荐时刻是符合条件时的最高采样点。天王星、海王星通常需要光学设备。','copy'));
@@ -169,9 +189,33 @@ function showMoonCalendar(start=now()){
 }
 $('tonight').onclick=showPlanner;
 $('saved').onclick=()=>{const b=openSheet('观测收藏');const actions=el('div',undefined,'backup-actions');actions.append(button('导出备份',exportBackup),button('导入备份',importBackup));b.append(actions);const objects=Object.keys(notes).map(id=>byId.get(id)).filter(Boolean);if(!objects.length)b.append(el('p','点击任意天体，在详情中保存收藏和观测笔记。记录保存在本机，可导出 JSON 备份并在其他设备导入。','copy'));else listObjects(b,objects);};
-$('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}if(window.NativeSky&&NativeSky.stopLocation)NativeSky.stopLocation();setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
+$('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。星图在本机计算；只有你主动查看联网天气时，所设经纬度才会发送给 Open-Meteo。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}if(window.NativeSky&&NativeSky.stopLocation)NativeSky.stopLocation();setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
 $('earlier').onclick=()=>{if(ar)return;offset-=3600000;calculate();};$('later').onclick=()=>{if(ar)return;offset+=3600000;calculate();};$('time').onclick=()=>{if(ar)return;const b=openSheet('穿越时间');b.append(el('p','选择本地日期与时间，查看那一刻的天空。当前 '+fmt(now()),'copy'));const input=el('input');input.type='datetime-local';const date=now();input.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);input.min='1900-01-01T00:00';input.max='2100-12-31T23:59';b.append(input,button('前往这一刻',()=>{const t=new Date(input.value);if(!input.value||!Number.isFinite(+t)||t.getFullYear()<1900||t.getFullYear()>2100){toast('请选择 1900～2100 年的有效时间');return;}offset=+t-Date.now();calculate();$('sheet').close();},'primary'),button('返回现在',()=>{offset=0;calculate();$('sheet').close();},'secondary'));};
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.0 / 免费 · 离线 · 无广告','tag'));for(const text of ['系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','天空颜色和恒星明暗随太阳高度变化，亮星带有柔和光晕；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示，不包含天气、云量和光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+let updateStatus=null,manualUpdate=false;
+function updateSheetVisible(){return $('sheet').open&&$('sheetTitle').textContent==='应用更新'&&updateStatus&&updateStatus.isConnected;}
+function maybeCheckUpdate(){
+ if(!window.NativeSky||!NativeSky.checkUpdate)return;
+ try{const last=Number(localStorage.getItem('updateCheckedAt')||0);if(Date.now()-last<24*3600000)return;localStorage.setItem('updateCheckedAt',String(Date.now()));}catch(e){}
+ manualUpdate=false;NativeSky.checkUpdate();
+}
+function showUpdate(){
+ const b=openSheet('应用更新');updateStatus=el('div',undefined,'copy');
+ b.append(el('div','STARLIGHT 0.3.1 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
+ if(!window.NativeSky||!NativeSky.checkUpdate){updateStatus.textContent='请在安卓 App 内使用检查更新。';return;}
+ if(NativeSky.hasVerifiedUpdate&&NativeSky.hasVerifiedUpdate())b.append(button('安装已下载并验证的版本',()=>NativeSky.installUpdate(),'secondary'));
+ b.append(button('检查新版本',()=>{manualUpdate=true;updateStatus.replaceChildren(el('p','正在连接 GitHub 检查版本…','copy'));NativeSky.checkUpdate();},'primary'));
+}
+function nativeUpdateAvailable(current,latest,size){
+ $('help').classList.add('update-available');
+ if(!updateSheetVisible()){toast('发现新版 '+latest+'，点击右侧 ? 查看更新');return;}
+ updateStatus.replaceChildren(el('p','当前 '+current+' · 新版 '+latest+' · 安装包约 '+(Number(size)/1024/1024).toFixed(1)+' MB','copy'),NativeSky.hasVerifiedUpdate&&NativeSky.hasVerifiedUpdate()?button('打开系统安装界面',()=>NativeSky.installUpdate(),'primary'):button('下载并验证 '+latest,()=>{updateStatus.replaceChildren(el('p','正在下载…','copy'));NativeSky.downloadUpdate();},'primary'));
+}
+function nativeUpdateCurrent(version){$('help').classList.remove('update-available');if(updateSheetVisible())updateStatus.textContent='当前 '+version+'，已是最新发布版本。';}
+function nativeUpdateProgress(value){if(updateSheetVisible())updateStatus.textContent='正在下载并校验：'+Math.max(0,Math.min(100,Number(value)||0))+'%';}
+function nativeUpdateReady(version){if(!updateSheetVisible()){toast('新版 '+version+' 已下载并验证，打开 ? → 检查更新后安装');return;}updateStatus.replaceChildren(el('p','已验证 '+version+'。安装时 Android 会请求你确认；若首次安装此来源，请按提示授权后返回点击安装。','copy'),button('打开系统安装界面',()=>NativeSky.installUpdate(),'primary'));}
+function nativeUpdatePermission(){if(updateSheetVisible())updateStatus.prepend(el('p','请在系统页面允许此来源安装应用，返回后再次点击“打开系统安装界面”。','copy'));}
+function nativeUpdateError(message){if(updateSheetVisible())updateStatus.textContent=message;else if(manualUpdate)toast(message);}
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.1 / 免费 · 本地观星','tag'),button('检查更新',showUpdate,'secondary'));for(const text of ['系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','天空颜色和恒星明暗随太阳高度变化，亮星带有柔和光晕；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}
