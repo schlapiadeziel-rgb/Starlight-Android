@@ -25,6 +25,12 @@ let camera=false,exported=null;w.NativeSky={setCoordinates(){},track(){},camera(
 click('later');click('ar');clickText('开启相机 AR');assert(camera);
 const run=s=>require('node:vm').runInContext(s,dom.getInternalVMContext());
 run('nativeCameraReady(48);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
+// Simulate a device rotation without recreating the WebView: target/time remain intact.
+run("selected=byId.get('conOri');offset=0;");
+Object.defineProperty(w,'innerWidth',{configurable:true,value:760});Object.defineProperty(w,'innerHeight',{configurable:true,value:360});
+w.dispatchEvent(new w.Event('resize'));run('nativeCameraReady(62);render();');
+assert.equal(w.document.getElementById('sky').width,760);assert.equal(w.document.getElementById('sky').height,360);
+assert.equal(run('selected.id'),'conOri');assert.equal(run('fov'),62);
 click('calibrate');let range=body().querySelector('input');range.value='1.2';range.dispatchEvent(new w.Event('input'));assert.equal(JSON.parse(w.localStorage.getItem('calibration')).scale,1.2);
 run("nativeCameraStopped('相机不可用');");assert(!w.document.body.classList.contains('ar'));assert(!camera);
 run('tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0);nativeSensorAccuracy(0);');assert(w.document.getElementById('mode').textContent.includes('方向待校准'));assert(!w.document.getElementById('calibrate').hidden);

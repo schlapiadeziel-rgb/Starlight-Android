@@ -3,6 +3,7 @@ package org.starlight.free;
 import android.app.Activity;
 import android.Manifest;
 import android.os.Bundle;
+import android.content.res.Configuration;
 import android.content.pm.PackageManager;
 import android.hardware.*;
 import android.location.*;
@@ -177,6 +178,15 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     @Override public void onProviderDisabled(String p){}
     @Override public void onStatusChanged(String p,int s,Bundle b){}
     @Override protected void onPause(){super.onPause();resumed=false;skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);web.onPause();web.pauseTimers();}
+    @Override public void onConfigurationChanged(Configuration configuration){
+        super.onConfigurationChanged(configuration);
+        // The WebView keeps the selected target and time; its resize event updates Canvas.
+        // The camera preview rotation/FOV needs to be measured again after display rotation.
+        if(cameraWanted && resumed && checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED){
+            skyCamera.stop();
+            skyCamera.start();
+        }
+    }
     @Override protected void onResume(){super.onResume();resumed=true;if(cameraWanted&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)skyCamera.start();if(web!=null){web.onResume();web.resumeTimers();}if(tracking)new Bridge().track(true);}
     @Override protected void onDestroy(){skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);web.destroy();super.onDestroy();}
 }

@@ -4,3 +4,12 @@ body.ar{background:transparent}body.ar canvas{background:transparent}.tools butt
 
 .planner-card{padding:16px 0;border-bottom:1px solid #ffffff20}.planner-card>small{display:block;color:#aab6d0;margin-bottom:10px}.planner-card .copy{margin:8px 0}
 #guide{position:fixed;z-index:2;pointer-events:none;color:#a4e9e3;font-size:27px;line-height:1;text-shadow:0 2px 12px #000,0 0 18px #54dcce;transform-origin:center}#guide[hidden]{display:none}
+
+@media (orientation:landscape) and (max-height:600px){
+ header{top:5px;left:14px;right:14px}.brand b{font-size:18px}.brand small{font-size:7px;margin-top:0}.logo{font-size:28px}.pill{min-height:36px}
+ #context{top:49px;left:17px}#heading{top:74px;left:17px}#target{top:119px;left:17px;max-width:52%}
+ .tools{top:56px;right:11px;display:grid;grid-template-columns:repeat(2,40px);gap:6px}.tools button{width:40px;height:40px;min-height:40px}
+ footer{left:10px;right:auto;bottom:6px;width:min(58vw,370px)}.timebar{margin:4px auto}.timebar button{min-height:32px;padding:0 12px}nav{padding:3px;border-radius:15px}nav button{min-height:44px;padding:4px;font-size:9px}nav button span{font-size:20px;line-height:20px}
+ #selection{padding:6px 10px;border-radius:12px}#selection b{font-size:13px}#selection small{font-size:9px;margin-top:2px}#selection button{min-height:34px}
+ #hint{bottom:13px;left:60%;right:95px;font-size:9px}body.ar #hint{bottom:13px}dialog{max-height:96dvh;padding:12px 20px 20px}.sheet-head{top:-12px}h2{font-size:18px;margin:6px 0}#toast{top:55px}
+}
