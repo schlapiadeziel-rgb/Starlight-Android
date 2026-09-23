@@ -152,24 +152,32 @@ function listDeepSky(parent){parent.replaceChildren();parent.append(el('p','110 
 $('search').onclick=()=>{const b=openSheet('探索天空'),input=el('input'),results=el('div');input.placeholder='星座 / English / HIP / M31 / NGC224';input.type='search';input.setAttribute('aria-label','搜索天体');b.append(input,button('浏览 88 星座',()=>{results.replaceChildren();listObjects(results,constellations);},'secondary'),button('浏览梅西耶 110',()=>listDeepSky(results),'secondary'),results);const search=()=>{const q=input.value.trim().toLowerCase();results.replaceChildren();let result=q?catalog.filter(s=>(s.name+' '+s.en+' '+(s.con||'')+' '+(s.constellation?s.abbr:s.deepSky?s.designation+' NGC'+s.ngc:'HIP '+s.hip)).toLowerCase().includes(q)):[...bodies,...deepSky.filter(s=>s.mag<=5).slice(0,10),...stars.slice(0,15)];listObjects(results,result.slice(0,60));if(result.length>60)results.append(el('p','显示前 60 项，请输入更完整的名称。','copy'));};input.oninput=search;search();};
 function showVisible(){calculate();const b=openSheet('此刻可见');b.append(button('查看未来 24 小时计划',showPlanner,'secondary'),el('p',cfg.place+' · '+fmt(now())+'。以下天体位于地平线上方；实际可见性受太阳、云层与光污染影响。','copy'));if(bodies[0].alt> -6)b.append(el('p','当前天空较亮，大多数恒星肉眼不可见。切勿直视太阳。','copy'));listObjects(b,catalog.filter(s=>s.alt>5&&!s.deepSky&&!s.constellation&&(s.color||s.mag<2)).sort((a,b)=>a.mag-b.mag).slice(0,45));if(bodies[0].alt< -6){b.append(el('h3','位置较高的深空目标'),el('p','部分需要望远镜；目录总星等不能代表肉眼可见。','copy'));listObjects(b,deepSky.filter(s=>s.alt>20&&s.mag<=6.5).sort((a,b)=>a.mag-b.mag).slice(0,15));}}
 let weatherStatus=null;
+const WEATHER_CACHE_KEY='weatherForecastV1',WEATHER_CACHE_MAX_AGE=3*3600000;
+let weatherRequestCoords=null;
+function cachedWeather(){
+ try{const x=JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));if(x&&Math.abs(x.lat-cfg.lat)<.00001&&Math.abs(x.lon-cfg.lon)<.00001&&x.data&&Number.isFinite(x.data.retrieved)&&Date.now()-x.data.retrieved>=0&&Date.now()-x.data.retrieved<WEATHER_CACHE_MAX_AGE)return x.data;}catch(e){}return null;
+}
 function weatherSheetVisible(){return $('sheet').open&&$('sheetTitle').textContent==='联网观测天气'&&weatherStatus&&weatherStatus.isConnected;}
 function showWeather(){
- const b=openSheet('联网观测天气');weatherStatus=el('div',undefined,'copy');
+ const b=openSheet('联网观测天气');weatherStatus=el('div',undefined,'copy');weatherRequestCoords=null;
  b.append(el('p','按所设经纬度查询 Open-Meteo 天气模型。只在点击下方按钮时发送坐标；预报从现实时间起算，不随星图穿越时间变化。云量、降水概率和能见度均为预报，不能代表现场天空，也不含光污染或地形遮挡。','copy'),el('p','观测位置：'+cfg.place+'（'+cfg.lat.toFixed(2)+'°, '+cfg.lon.toFixed(2)+'°）','copy'),weatherStatus);
  if(cfg.place.includes('示例')){weatherStatus.textContent='请先设置实际观测位置，避免获取北京示例天气。';b.append(button('设置位置',()=>$('loc').click(),'primary'));return;}
  if(!window.NativeSky||!NativeSky.fetchWeather){weatherStatus.textContent='联网天气需在安卓 App 中查看。';return;}
- b.append(button('获取未来 24 小时预报',()=>{weatherStatus.replaceChildren(el('p','正在获取天气模型…','copy'));NativeSky.fetchWeather(cfg.lat,cfg.lon);},'primary'));
+ b.append(button('获取未来 24 小时预报',()=>{weatherRequestCoords={lat:cfg.lat,lon:cfg.lon};weatherStatus.replaceChildren(el('p','正在获取天气模型…','copy'));NativeSky.fetchWeather(cfg.lat,cfg.lon);},'primary'));
+}
+function renderWeather(d,cached=false){
+ try{
+  if(!Array.isArray(d.hours)||d.hours.length<1)throw Error('empty');
+  const fmtValue=(v,unit)=>Number.isFinite(v)&&v>=0?Math.round(v)+unit:'暂无';
+  weatherStatus.replaceChildren(el('p',(cached?'联网失败，显示上次获取的预报（非实时） · ':'')+'来源：Open-Meteo · 获取于 '+fmt(new Date(d.retrieved))+' · 模型网格 '+Number(d.latitude).toFixed(2)+'°, '+Number(d.longitude).toFixed(2)+'°','copy'),el('p',(cached?'上次模型：':'目前模型：')+'云量 '+fmtValue(d.cloud,'%')+' · 降水 '+(Number.isFinite(d.precipitation)&&d.precipitation>=0?d.precipitation.toFixed(1)+' mm':'暂无')+' · 气温 '+(Number.isFinite(d.temperature)&&d.temperature>-100?d.temperature.toFixed(1)+'°C':'暂无'),'copy'),el('h3','未来时段 · 约每 3 小时'));
+  let future=0;for(const row of d.hours){if(!Array.isArray(row)||row.length!==4||!Number.isFinite(row[0])||row[0]<Date.now())continue;const card=el('div',undefined,'planner-card'),visibility=Number.isFinite(row[3])&&row[3]>=0?(row[3]/1000).toFixed(1)+' km':'暂无';card.append(el('b',fmt(new Date(row[0]))),el('p','云量 '+fmtValue(row[1],'%')+' · 降水概率 '+fmtValue(row[2],'%')+' · 模型能见度 '+visibility,'copy'));weatherStatus.append(card);future++;}if(!future)weatherStatus.append(el('p','这份预报已经没有未来时段，请联网重新获取。','copy'));
+ }catch(e){weatherStatus.textContent='天气数据暂不可用，请稍后重试。';}
 }
 function nativeWeatherResult(text){
  if(!weatherSheetVisible())return;
- try{
-  const d=JSON.parse(text);if(!Array.isArray(d.hours)||d.hours.length<1)throw Error('empty');
-  const fmtValue=(v,unit)=>Number.isFinite(v)&&v>=0?Math.round(v)+unit:'暂无';
-  weatherStatus.replaceChildren(el('p','来源：Open-Meteo · 获取于 '+fmt(new Date(d.retrieved))+' · 模型网格 '+Number(d.latitude).toFixed(2)+'°, '+Number(d.longitude).toFixed(2)+'°','copy'),el('p','目前模型：云量 '+fmtValue(d.cloud,'%')+' · 降水 '+(Number.isFinite(d.precipitation)&&d.precipitation>=0?d.precipitation.toFixed(1)+' mm':'暂无')+' · 气温 '+(Number.isFinite(d.temperature)&&d.temperature>-100?d.temperature.toFixed(1)+'°C':'暂无'),'copy'),el('h3','未来 24 小时 · 约每 3 小时'));
-  for(const row of d.hours){if(!Array.isArray(row)||row.length!==4||!Number.isFinite(row[0]))continue;const card=el('div',undefined,'planner-card'),visibility=Number.isFinite(row[3])&&row[3]>=0?(row[3]/1000).toFixed(1)+' km':'暂无';card.append(el('b',fmt(new Date(row[0]))),el('p','云量 '+fmtValue(row[1],'%')+' · 降水概率 '+fmtValue(row[2],'%')+' · 模型能见度 '+visibility,'copy'));weatherStatus.append(card);}
- }catch(e){weatherStatus.textContent='天气数据暂不可用，请稍后重试。';}
+ try{const d=JSON.parse(text);if(!Array.isArray(d.hours)||!d.hours.length||!Number.isFinite(d.retrieved))throw Error('invalid');renderWeather(d);if(weatherRequestCoords)try{localStorage.setItem(WEATHER_CACHE_KEY,JSON.stringify({...weatherRequestCoords,data:d}));}catch(e){}weatherRequestCoords=null;}catch(e){weatherStatus.textContent='天气数据暂不可用，请稍后重试。';}
 }
-function nativeWeatherError(message){if(weatherSheetVisible())weatherStatus.textContent=message;}
+function nativeWeatherError(message){if(!weatherSheetVisible())return;const previous=cachedWeather();if(previous)renderWeather(previous,true);else weatherStatus.textContent=message;weatherRequestCoords=null;}
 function showPlanner(){
  const start=now(),plan=SkyPlanner.build(A,cfg.lat,cfg.lon,start),b=openSheet('未来 24 小时观测计划');
  b.append(button('联网查看云量和降水',showWeather,'secondary'),button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));

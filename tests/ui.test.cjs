@@ -44,6 +44,10 @@ run(`nativeImportNotes(JSON.stringify({app:'Starlight',version:1,notes:{Moon:'�
 click('tonight');clickText('月相日历');assert.equal(w.document.getElementById('sheetTitle').textContent,'月相日历');assert.equal(body().querySelectorAll('.planner-card').length,8);
 click('tonight');clickText('联网查看云量和降水');clickText('获取未来 24 小时预报');assert.deepEqual(weatherCoords,[run('cfg.lat'),run('cfg.lon')]);
 run('nativeWeatherResult(JSON.stringify({latitude:-33.9,longitude:151.2,retrieved:Date.now(),currentTime:Date.now(),cloud:15,precipitation:0,temperature:18,hours:[[Date.now()+3600000,20,10,14000]]}))');assert(text().includes('Open-Meteo'));assert(text().includes('能见度 14.0 km'));
+assert(w.localStorage.getItem('weatherForecastV1'));
+run("nativeWeatherError('连接失败')");assert(text().includes('上次获取的预报（非实时）'));assert(text().includes('能见度 14.0 km'));
+run('setPlace(40,116,"新位置")');click('tonight');clickText('联网查看云量和降水');run("nativeWeatherError('连接失败')");assert(text().includes('连接失败'));assert(!text().includes('能见度 14.0 km'));
+run('setPlace(-33.9,151.2,"原位置")');const stale=JSON.parse(w.localStorage.getItem('weatherForecastV1'));stale.data.retrieved=Date.now()-4*3600000;w.localStorage.setItem('weatherForecastV1',JSON.stringify(stale));click('tonight');clickText('联网查看云量和降水');run("nativeWeatherError('连接失败')");assert(text().includes('连接失败'));assert(!text().includes('上次获取的预报'));
 click('help');clickText('检查更新');clickText('检查新版本');assert(checks>0);
 run("nativeUpdateAvailable('0.3.1','0.3.2','1234567')");assert(text().includes('新版 0.3.2'));clickText('下载并验证 0.3.2');assert.equal(downloads,1);
 run("nativeUpdateProgress('50')");assert(text().includes('50%'));run("nativeUpdateReady('0.3.2')");clickText('打开系统安装界面');assert.equal(installs,1);

@@ -20,12 +20,20 @@ final class WeatherManager {
             HttpURLConnection connection=null;
             try{
                 String url=String.format(Locale.US,"https://api.open-meteo.com/v1/forecast?latitude=%.4f&longitude=%.4f&current=cloud_cover,precipitation,temperature_2m&hourly=cloud_cover,precipitation_probability,visibility&forecast_hours=24&timeformat=unixtime&timezone=UTC",lat,lon);
-                connection=(HttpURLConnection)new URL(url).openConnection();
-                connection.setConnectTimeout(12000);connection.setReadTimeout(20000);connection.setInstanceFollowRedirects(false);
-                connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Starlight-Android-Weather");
-                if(connection.getResponseCode()!=200)throw new IOException("weather HTTP error");
-                ByteArrayOutputStream bytes=new ByteArrayOutputStream();
-                try(InputStream in=connection.getInputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(bytes.size()+n>300000)throw new IOException("weather too large");bytes.write(buffer,0,n);}}
+                ByteArrayOutputStream bytes=null;
+                for(int attempt=0;attempt<2;attempt++){
+                    try{
+                        connection=(HttpURLConnection)new URL(url).openConnection();
+                        connection.setConnectTimeout(7000);connection.setReadTimeout(10000);connection.setInstanceFollowRedirects(false);
+                        connection.setRequestProperty("Accept","application/json");connection.setRequestProperty("User-Agent","Starlight-Android-Weather");
+                        int code=connection.getResponseCode();
+                        if(code!=200){if(code==429||code>=500)throw new IOException("weather service temporarily unavailable");throw new IllegalStateException("weather HTTP "+code);}
+                        bytes=new ByteArrayOutputStream();
+                        try(InputStream in=connection.getInputStream()){byte[] buffer=new byte[8192];int n;while((n=in.read(buffer))!=-1){if(bytes.size()+n>300000)throw new IllegalStateException("weather too large");bytes.write(buffer,0,n);}}
+                        break;
+                    }catch(IOException e){if(attempt==1)throw e;}
+                    finally{if(connection!=null){connection.disconnect();connection=null;}}
+                }
                 JSONObject data=new JSONObject(new String(bytes.toByteArray(),"UTF-8")),current=data.getJSONObject("current"),hourly=data.getJSONObject("hourly");
                 JSONArray times=hourly.getJSONArray("time"),clouds=hourly.getJSONArray("cloud_cover"),rains=hourly.getJSONArray("precipitation_probability"),sights=hourly.getJSONArray("visibility");
                 if(times.length()<1||times.length()!=clouds.length()||times.length()!=rains.length()||times.length()!=sights.length())throw new IOException("weather fields incomplete");
