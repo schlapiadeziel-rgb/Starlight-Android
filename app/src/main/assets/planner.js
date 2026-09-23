@@ -29,6 +29,19 @@
   });
   return {start:+start,end:+start+86400000,dark:windows(samples,s=>s.sun<=-18),moonFraction:A.Illumination('Moon',start).phase_fraction,targets};
  }
+ // An observing hint from forecast samples, not a prediction of actual sky transparency.
+ function weatherHints(A,lat,lon,rows,start){
+  if(!Number.isFinite(lat)||Math.abs(lat)>90||!Number.isFinite(lon)||Math.abs(lon)>180||!Number.isFinite(start)||!Array.isArray(rows))throw new Error('Invalid weather input');
+  const observer=new A.Observer(lat,lon,0),out=[];
+  for(const row of rows){
+   if(!Array.isArray(row)||row.length!==4||!Number.isFinite(row[0])||row[0]<start||row[0]>start+86400000)continue;
+   const t=new Date(row[0]),eq=A.Equator('Sun',t,observer,true,true),sun=A.Horizon(t,observer,eq.ra,eq.dec,'normal').altitude;
+   const known=Number.isFinite(row[1])&&row[1]>=0&&row[1]<=100&&Number.isFinite(row[2])&&row[2]>=0&&row[2]<=100&&Number.isFinite(row[3])&&row[3]>=0;
+   const dark=sun<=-12,clear=dark&&known&&row[1]<=35&&row[2]<=25&&row[3]>=5000;
+   out.push({time:row[0],sun,cloud:row[1],rain:row[2],visibility:row[3],dark,clear,label:!dark?'天光较亮':!known?'天气数据不足':clear?'天气模型较有利':'天气模型不理想'});
+  }
+  return out;
+ }
  function moonCalendar(A,start,count=8){
   if(!Number.isFinite(+start)||!Number.isInteger(count)||count<1||count>16)throw new Error('Invalid lunar calendar request');
   const labels=['新月','上弦月','满月','下弦月'];
@@ -41,6 +54,6 @@
   const stage=['新月附近','娥眉月 · 渐盈','上弦附近','盈凸月 · 渐盈','满月附近','亏凸月 · 渐亏','下弦附近','残月 · 渐亏'][Math.floor((angle+22.5)/45)%8];
   return {start:+start,angle,fraction,stage,events};
  }
- root.SkyPlanner={build,moonCalendar};
+ root.SkyPlanner={build,moonCalendar,weatherHints};
  if(typeof module!=='undefined')module.exports=root.SkyPlanner;
 })(typeof window==='undefined'?globalThis:window);

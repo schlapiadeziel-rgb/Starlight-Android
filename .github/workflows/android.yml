@@ -61,8 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.3-moon-phase.apk
-          sha256sum Starlight-0.3.3-moon-phase.apk > SHA256SUMS
-          if ! gh release view v0.3.3 >/dev/null 2>&1; then
-            gh release create v0.3.3 Starlight-0.3.3-moon-phase.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.3 moon phase' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.4-weather-planner.apk
+          sha256sum Starlight-0.3.4-weather-planner.apk > SHA256SUMS
+          if ! gh release view v0.3.4 >/dev/null 2>&1; then
+            gh release create v0.3.4 Starlight-0.3.4-weather-planner.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.4 weather-aware planner' --notes-file RELEASE_NOTES.md
           fi

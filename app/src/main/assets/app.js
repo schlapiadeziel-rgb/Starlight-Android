@@ -165,7 +165,7 @@ let weatherStatus=null;
 const WEATHER_CACHE_KEY='weatherForecastV1',WEATHER_CACHE_MAX_AGE=3*3600000;
 let weatherRequestCoords=null;
 function cachedWeather(){
- try{const x=JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));if(x&&Math.abs(x.lat-cfg.lat)<.00001&&Math.abs(x.lon-cfg.lon)<.00001&&x.data&&Number.isFinite(x.data.retrieved)&&Date.now()-x.data.retrieved>=0&&Date.now()-x.data.retrieved<WEATHER_CACHE_MAX_AGE)return x.data;}catch(e){}return null;
+ try{const x=JSON.parse(localStorage.getItem(WEATHER_CACHE_KEY));if(x&&Math.abs(x.lat-cfg.lat)<.00001&&Math.abs(x.lon-cfg.lon)<.00001&&x.data&&Array.isArray(x.data.hours)&&Number.isFinite(x.data.retrieved)&&Date.now()-x.data.retrieved>=0&&Date.now()-x.data.retrieved<WEATHER_CACHE_MAX_AGE)return x.data;}catch(e){}return null;
 }
 function weatherSheetVisible(){return $('sheet').open&&$('sheetTitle').textContent==='联网观测天气'&&weatherStatus&&weatherStatus.isConnected;}
 function showWeather(){
@@ -173,7 +173,7 @@ function showWeather(){
  b.append(el('p','按所设经纬度查询 Open-Meteo 天气模型。只在点击下方按钮时发送坐标；预报从现实时间起算，不随星图穿越时间变化。云量、降水概率和能见度均为预报，不能代表现场天空，也不含光污染或地形遮挡。','copy'),el('p','观测位置：'+cfg.place+'（'+cfg.lat.toFixed(2)+'°, '+cfg.lon.toFixed(2)+'°）','copy'),weatherStatus);
  if(cfg.place.includes('示例')){weatherStatus.textContent='请先设置实际观测位置，避免获取北京示例天气。';b.append(button('设置位置',()=>$('loc').click(),'primary'));return;}
  if(!window.NativeSky||!NativeSky.fetchWeather){weatherStatus.textContent='联网天气需在安卓 App 中查看。';return;}
- b.append(button('获取未来 24 小时预报',()=>{weatherRequestCoords={lat:cfg.lat,lon:cfg.lon};weatherStatus.replaceChildren(el('p','正在获取天气模型…','copy'));NativeSky.fetchWeather(cfg.lat,cfg.lon);},'primary'));
+ b.append(button('获取未来 24 小时预报',()=>{weatherRequestCoords={lat:cfg.lat,lon:cfg.lon};weatherStatus.replaceChildren(el('p','正在获取天气模型…','copy'));NativeSky.fetchWeather(cfg.lat,cfg.lon);},'primary'),button('返回观测计划',showPlanner,'secondary'));
 }
 function renderWeather(d,cached=false){
  try{
@@ -193,7 +193,18 @@ function showPlanner(){
  b.append(button('联网查看云量和降水',showWeather,'secondary'),button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
  if(cfg.place.includes('示例'))b.append(el('p','当前使用示例位置，请先点顶部位置按钮设置实际经纬度。','copy'));
  const spans=xs=>xs.map(x=>fmt(new Date(x.start))+' — '+fmt(new Date(x.end))).join(' / ');
- b.append(el('h3','暗夜时段'),el('p',plan.dark.length?spans(plan.dark):'未来 24 小时没有太阳低于 −18° 的暗夜时段。','copy'),el('p','暗夜仅按太阳高度判断，不代表无月光。当前月面照明比例 '+(plan.moonFraction*100).toFixed(0)+'%。','copy'),el('h3','月亮与行星'),el('p','筛选条件：太阳低于 −6°，目标高于 20°。按 10 分钟采样，边界约有 10 分钟误差；推荐时刻是符合条件时的最高采样点。天王星、海王星通常需要光学设备。','copy'));
+ b.append(el('h3','暗夜时段'),el('p',plan.dark.length?spans(plan.dark):'未来 24 小时没有太阳低于 −18° 的暗夜时段。','copy'),el('p','暗夜仅按太阳高度判断，不代表无月光。当前月面照明比例 '+(plan.moonFraction*100).toFixed(0)+'%。','copy'));
+ if(offset!==0)b.append(el('p','当前星图处于自选时间，现实天气预报不参与这份历史或未来天体计划。返回现在后可查看天气辅助时段。','copy'));
+ if(offset===0&&!cfg.place.includes('示例')){
+  const weather=cachedWeather();
+  if(weather){
+   const hints=SkyPlanner.weatherHints(A,cfg.lat,cfg.lon,weather.hours,Date.now()).filter(x=>x.dark);
+   b.append(el('h3','天气辅助观测'),el('p','Open-Meteo 模型 · 获取于 '+fmt(new Date(weather.retrieved))+'。仅比较有预报的时刻：太阳低于 −12°、云量不高于 35%、降水概率不高于 25%、模型能见度至少 5 km 标为较有利；不代表现场天空、光污染或安全预警。','copy'));
+   if(!hints.length)b.append(el('p','缓存预报中没有未来夜间时段，请重新获取天气。','copy'));
+   for(const x of hints.slice(0,6)){const card=el('div',undefined,'planner-card');card.append(el('b',fmt(new Date(x.time))+' · '+x.label),el('p','云量 '+(x.cloud>=0?x.cloud+'%':'暂无')+' · 降水概率 '+(x.rain>=0?x.rain+'%':'暂无')+' · 模型能见度 '+(x.visibility>=0?(x.visibility/1000).toFixed(1)+' km':'暂无'),'copy'),button('查看该时刻星图',()=>{stopTrack();offset=x.time-Date.now();calculate();$('sheet').close();},'secondary'));b.append(card);}
+  }else b.append(el('h3','天气辅助观测'),el('p','尚无此位置近三小时的天气预报。点击上方联网按钮获取；离线天体计划照常可用。','copy'));
+ }
+ b.append(el('h3','月亮与行星'),el('p','筛选条件：太阳低于 −6°，目标高于 20°。按 10 分钟采样，边界约有 10 分钟误差；推荐时刻是符合条件时的最高采样点。天王星、海王星通常需要光学设备。','copy'));
  for(const target of plan.targets){const s=byId.get(target.id),card=el('div',undefined,'planner-card');card.append(el('b',s.name));if(target.best){card.append(el('p',spans(target.windows),'copy'),el('small','推荐 '+fmt(new Date(target.best.time))+' · 高度 '+target.best.alt.toFixed(0)+'°'),button('查看推荐时刻星图',()=>{stopTrack();offset=target.best.time-Date.now();calculate();focus(s);},'secondary'));}else card.append(el('p','未来 24 小时无符合条件的时段。','copy'));b.append(card);}
 }
 function showMoonCalendar(start=now()){
