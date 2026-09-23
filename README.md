@@ -2,13 +2,15 @@
 
 免费、离线、无广告的中文观星 App。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.2.5 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.2.6 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.5)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.2.6)
 
 ## 已实现
+
+- 110 个梅西耶深空天体：星云、星团、星系等，可搜索 M31 / NGC224 / 中文名，查看地平坐标并在星图定位。较亮目标以青色菱形标记；目录总星等不等同于肉眼可见性。
 
 - 首次打开引导设置观测位置：可选择本机定位或手动经纬度。大致位置权限可用；拒绝时明确提示示例天空，手动坐标不会被后续位置更新覆盖。
 
@@ -35,7 +37,7 @@
 | 卫星 / ISS 实时轨道 | 未实现，需轨道数据更新与传播计算 |
 | 十亿级恒星云数据库 | 未实现；当前离线星表 15,598 颗 |
 | AI 问答、语音导览、空间音频 | 未实现；没有伪装成 AI 的固定回答 |
-| 全部星座连线/插画与深空天体 | 未完整实现 |
+| 全部星座连线/插画与深空天体 | 新增 110 个梅西耶天体位置，其他深空目录、插画和完整星座仍未实现 |
 | 天气、光污染图、观星条件与提醒 | 未实现 |
 | 多人同步、社交分享、观测照片 | 未实现 |
 | 原版性能等价 | 未验证，需不同档位 Android 真机基准 |
@@ -79,3 +81,5 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 - HYG v4.1 — David Nash / Astronexus, https://github.com/astronexus/HYG-Database ，CC BY-SA 4.0。`stars-*.js` 是筛选 ≤7 等、重新排序与 JSON 转换的派生数据，保持 CC BY-SA 4.0。
 - Astronomy Engine 2.1.19 — Don Cross, https://github.com/cosinekitty/astronomy ，MIT。
 - 项目原创代码 MIT。完整声明见 `licenses/`。
+
+梅西耶目录坐标为近似 J2000，未经逐目标自行修正；目录总星等是扩展天体的整体亮度，不能单凭它判断肉眼是否可见。资料来源 Bretton Wade / YaleBrightStarCatalog 的 `messier.json`（MIT），字段筛选与中文常用名映射见 `app/src/main/assets/messier.js`；许可见 `licenses/messier-MIT.txt`。
