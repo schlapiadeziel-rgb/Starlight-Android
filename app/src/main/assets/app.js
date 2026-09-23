@@ -50,7 +50,18 @@ function render(){
 let lastDraw=0;function frame(t){if(!document.hidden&&t-lastDraw>=32){render();lastDraw=t;}requestAnimationFrame(frame);}requestAnimationFrame(frame);
 setInterval(()=>{if(!document.hidden&&Date.now()-lastCalc>30000)calculate();},1000);
 function stopTrack(){if(ar||arPending)exitAR();tracking=false;roll=0;if(window.NativeSky)NativeSky.track(false);sync();}
-function nativeReady(){if(window.NativeSky&&!tracking){tracking=true;deviceView=null;sync();NativeSky.track(true);}}
+function nativeReady(){
+ if(!window.NativeSky)return;
+ if(!tracking){tracking=true;deviceView=null;sync();NativeSky.track(true);}
+ if(cfg.place.includes('示例')&&!localStorage.getItem('locationSetupSeen')){
+  localStorage.setItem('locationSetupSeen','1');
+  const b=openSheet('首次设置观测位置');
+  b.append(el('p','星图会自动跟随手机方向。要让它与当地天空对应，还需要你的观测位置。位置只在本机用于计算，不会上传。','copy'),
+   button('使用当前位置',()=>{NativeSky.locate();toast('正在获取位置；如未授权，请选择允许定位');},'primary'),
+   button('手动设置经纬度',()=>{$('loc').click();},'secondary'),
+   button('稍后再设置',()=>{$('sheet').close();toast('当前仍是北京示例天空，不能用于当地识星');},'secondary'));
+ }
+}
 function nativeTrackingStarted(){deviceView=null;sync();}
 function nativePose(matrix,declination){
  if(!tracking)return;const view=M.deviceBasis(matrix,declination);if(!view)return;
@@ -58,7 +69,8 @@ function nativePose(matrix,declination){
 }
 function nativeSensorAccuracy(value){sensorAccuracy=Number(value);if(tracking&&sensorAccuracy<2&&!accuracyWarned){accuracyWarned=true;toast('方向精度较低：远离磁铁和金属，将手机缓慢画 8 字校准');}if(sensorAccuracy>=2)accuracyWarned=false;sync();}
 function nativeUnavailable(){stopTrack();toast('此设备缺少方向传感器，可使用拖动模式');}
-function nativeLocation(lat,lon){setPlace(lat,lon,'当前位置');toast('位置已更新');}
+function nativeLocation(lat,lon){if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;setPlace(lat,lon,'当前位置');if($('sheet').open&&$('sheetTitle').textContent==='首次设置观测位置')$('sheet').close();toast('已使用当前位置，星图和方向已更新');}
+function nativeLocationError(message){toast(message+'；也可点顶部位置手动填写经纬度');}
 function setPlace(lat,lon,name){cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
 $('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('方向自动跟随手机背面；请先设置实际位置');};
 $('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
@@ -96,9 +108,9 @@ function showMoonCalendar(start=now()){
 }
 $('tonight').onclick=showPlanner;
 $('saved').onclick=()=>{const b=openSheet('观测收藏');const actions=el('div',undefined,'backup-actions');actions.append(button('导出备份',exportBackup),button('导入备份',importBackup));b.append(actions);const objects=Object.keys(notes).map(id=>byId.get(id)).filter(Boolean);if(!objects.length)b.append(el('p','点击任意天体，在详情中保存收藏和观测笔记。记录保存在本机，可导出 JSON 备份并在其他设备导入。','copy'));else listObjects(b,objects);};
-$('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
+$('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}if(window.NativeSky&&NativeSky.stopLocation)NativeSky.stopLocation();setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
 $('earlier').onclick=()=>{if(ar)return;offset-=3600000;calculate();};$('later').onclick=()=>{if(ar)return;offset+=3600000;calculate();};$('time').onclick=()=>{if(ar)return;const b=openSheet('穿越时间');b.append(el('p','选择本地日期与时间，查看那一刻的天空。当前 '+fmt(now()),'copy'));const input=el('input');input.type='datetime-local';const date=now();input.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);input.min='1900-01-01T00:00';input.max='2100-12-31T23:59';b.append(input,button('前往这一刻',()=>{const t=new Date(input.value);if(!input.value||!Number.isFinite(+t)||t.getFullYear()<1900||t.getFullYear()>2100){toast('请选择 1900～2100 年的有效时间');return;}offset=+t-Date.now();calculate();$('sheet').close();},'primary'),button('返回现在',()=>{offset=0;calculate();$('sheet').close();},'secondary'));};
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.4 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会显示方向引导。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（David Nash / Astronexus，CC BY-SA 4.0，按星等筛选并转为 JSON）；天文计算：Astronomy Engine 2.1.19（Don Cross，MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.5 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会显示方向引导。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（David Nash / Astronexus，CC BY-SA 4.0，按星等筛选并转为 JSON）；天文计算：Astronomy Engine 2.1.19（Don Cross，MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}

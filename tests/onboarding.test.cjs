@@ -1,0 +1,17 @@
+const {JSDOM}=require('jsdom'),fs=require('node:fs'),path=require('node:path'),vm=require('node:vm'),assert=require('node:assert/strict');
+const root=path.resolve(__dirname,'../app/src/main/assets');
+const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://app.starlight.local/',runScripts:'outside-only'}),w=dom.window;
+w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
+w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
+for(const f of ['astronomy.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'core.js','backup.js','planner.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+let tracked=0,located=0,stopped=0;
+w.NativeSky={setCoordinates(){},track(){tracked++},locate(){located++},stopLocation(){stopped++}};
+const run=s=>vm.runInContext(s,dom.getInternalVMContext()),clickText=t=>{const b=[...w.document.querySelectorAll('#sheetBody button')].find(x=>x.textContent===t);assert(b,t);b.click();};
+run('nativeReady();');assert.equal(tracked,1);assert.equal(w.document.getElementById('sheetTitle').textContent,'首次设置观测位置');assert(w.document.getElementById('sheetBody').textContent.includes('不会上传'));
+clickText('使用当前位置');assert.equal(located,1);assert.equal(run('cfg.place'),'北京 · 示例位置');
+run('nativeLocationError("未获定位权限")');assert(w.document.getElementById('toast').textContent.includes('手动填写'));
+clickText('手动设置经纬度');let inputs=w.document.querySelectorAll('#sheetBody input');inputs[0].value='-34';inputs[1].value='151';clickText('保存位置');assert.equal(stopped,1);assert.equal(run('cfg.lat'),-34);assert(!w.document.getElementById('sheet').open);
+run('nativeReady();');assert.equal(tracked,1);assert(!w.document.getElementById('sheet').open);
+run('nativeLocation(95,999);');assert.equal(run('cfg.lat'),-34);
+w.document.getElementById('loc').click();clickText('◎ 使用手机定位');run('nativeLocation(-33.9,151.2);');assert.equal(run('cfg.place'),'当前位置');
+dom.window.close();console.log('PASS: first-run position setup, one-time prompt, permission fallback, manual override, and auto position.');

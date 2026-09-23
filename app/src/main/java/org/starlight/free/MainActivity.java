@@ -105,6 +105,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
                 requestPermissions(new String[]{Manifest.permission.ACCESS_COARSE_LOCATION,Manifest.permission.ACCESS_FINE_LOCATION},5);
             else startLocation();
         });}
+        @JavascriptInterface public void stopLocation(){runOnUiThread(()->locations.removeUpdates(MainActivity.this));}
         @JavascriptInterface public void setCoordinates(double lat,double lon){
             if(Double.isNaN(lat)||Double.isNaN(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
             declination=new GeomagneticField((float)lat,(float)lon,0,System.currentTimeMillis()).getDeclination();
@@ -115,12 +116,14 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
             boolean any=false;
             for(String provider:locations.getProviders(true)){
                 if(!provider.equals(LocationManager.GPS_PROVIDER)&&!provider.equals(LocationManager.NETWORK_PROVIDER))continue;
+                // Approximate location grants coarse access but not the GPS provider.
+                if(provider.equals(LocationManager.GPS_PROVIDER) && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION)!=PackageManager.PERMISSION_GRANTED)continue;
                 Location last=locations.getLastKnownLocation(provider);
                 if(last!=null && System.currentTimeMillis()-last.getTime()<3600000)onLocationChanged(last);
                 locations.requestLocationUpdates(provider,10000,100,this);any=true;
             }
-            if(!any)js("toast('请开启系统定位，或手动设置经纬度')");
-        }catch(SecurityException e){js("toast('未获定位权限，请手动设置位置')");}
+            if(!any)js("nativeLocationError('请开启系统定位')");
+        }catch(SecurityException e){js("nativeLocationError('未获定位权限')");}
     }
     @Override public void onRequestPermissionsResult(int r,String[] p,int[] g){
         super.onRequestPermissionsResult(r,p,g);
@@ -129,7 +132,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
             else{cameraWanted=false;js("nativeCameraStopped(\"未获得相机权限，可继续使用离线星图\")");}
         }else if(r==5){
             if(g.length>0&&g[0]==PackageManager.PERMISSION_GRANTED)startLocation();
-            else js("toast('可以使用手动位置，定位并非必需')");
+            else js("nativeLocationError('未获定位权限')");
         }
     }
     @Override protected void onActivityResult(int request,int result,Intent data){
