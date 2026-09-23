@@ -45,3 +45,16 @@ const corrected=M.deviceBasis([1,0,0,0,0,-1,0,1,0],10);
 assert(Math.abs(Math.atan2(corrected.f[0],corrected.f[1])*180/Math.PI-10)<1e-9);
 assert.equal(M.deviceBasis([NaN],0),null);
 console.log('PASS: automatic north/east/south/west, zenith, screen roll and declination projection.');
+// Guidance must follow screen axes, including when the handset is rolled.
+const north=M.basis(0,0),east=M.vec(20,0);
+const rightCue=M.targetGuide(east,north,400,800,60);
+assert.equal(rightCue.direction,'右');assert(rightCue.x>200);assert.equal(rightCue.behind,false);
+const rolledCue=M.targetGuide(east,north,400,800,60,Math.PI/2);
+assert.equal(rolledCue.direction,'上');assert(rolledCue.y<400);
+const behind=M.targetGuide(M.vec(180,0),north,400,800,60);
+assert.equal(behind.behind,true);
+const center=M.targetGuide(M.vec(0,0),north,400,800,60);
+assert(center.aligned&&center.onScreen);
+const far=M.targetGuide(M.vec(75,0),north,400,800,60);
+assert(!far.onScreen&&far.x<=380&&far.x>=20&&far.y<=650&&far.y>=110);
+console.log('PASS: target cues respect roll, alignment, behind-camera targets, and safe screen edges.');

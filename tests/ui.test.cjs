@@ -36,4 +36,8 @@ let dateInput=body().querySelector('input');dateInput.value='2026-12-30';clickTe
 clickText('查看此时月亮');assert.equal(run('selected.id'),'Moon');assert.equal(run('tracking'),false);assert(!w.document.getElementById('sheet').open);assert.notEqual(w.document.getElementById('time').textContent,'◷ 现在');
 click('time');clickText('返回现在');assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
 run('tracking=false; nativeReady();');assert.equal(run('tracking'),true);assert(w.document.getElementById('mode').textContent.includes('正在获取'));run('nativePose([1,0,0,0,0,-1,0,1,0],0);');assert(!w.document.getElementById('mode').textContent.includes('正在获取'));
+run("selected={name:'目标',v:SkyMath.vec(70,0),alt:10,az:70};render();");assert(w.document.getElementById('target').textContent.includes('屏幕右'));assert.equal(w.document.getElementById('guide').hidden,false);
+run('selected.v=SkyMath.vec(0,0);dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('已对准'));assert.equal(w.document.getElementById('guide').hidden,true);
+run('selected.alt=-5;dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('地平线下'));
+run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.some(p=>p.s===selected)'));
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');

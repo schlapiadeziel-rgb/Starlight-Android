@@ -10,6 +10,7 @@ let deviceView=null;
 let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=[],toastTimer;
 const chinese={Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',Rigel:'参宿七',Procyon:'南河三',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Spica:'角宿一',Antares:'心宿二',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',Polaris:'北极星',Castor:'北河二',Dubhe:'天枢',Merak:'天璇',Phecda:'天玑',Megrez:'天权',Alioth:'玉衡',Mizar:'开阳',Alkaid:'摇光',Alnitak:'参宿一',Alnilam:'参宿二',Mintaka:'参宿三',Bellatrix:'参宿五',Saiph:'参宿六',Schedar:'王良四',Caph:'王良一',Ruchbah:'阁道三',Segin:'阁道二',Acrux:'十字架二',Mimosa:'十字架三'};
 const stars=STAR_DATA.map(r=>{let ra=r[2]*15*D,d=r[3]*D;return {id:'s'+r[0],name:chinese[r[1]]||r[1],en:r[1],ra:r[2],dec:r[3],mag:r[4],con:r[5],ci:r[6],dist:r[7],hip:r[8],eq:[Math.cos(d)*Math.cos(ra),Math.cos(d)*Math.sin(ra),Math.sin(d)],v:[0,0,0],az:0,alt:0,type:'恒星'};});
+const starsByMagnitude=stars.slice().sort((a,b)=>a.mag-b.mag);
 const bodies=[['Sun','太阳','#ffd07d'],['Moon','月亮','#ecedf1'],['Mercury','水星','#bea99b'],['Venus','金星','#ffe3b0'],['Mars','火星','#f1a285'],['Jupiter','木星','#edd6b6'],['Saturn','土星','#cfc099'],['Uranus','天王星','#a5dfdf'],['Neptune','海王星','#859eee'],['Pluto','冥王星','#c6b6a6']].map(([en,name,color])=>({id:en,en,name,color,type:en==='Moon'?'地球卫星':en==='Sun'?'恒星':en==='Pluto'?'矮行星':'行星',v:[0,0,0]}));
 const deepSky=MESSIER_DATA.map(([num,cn,ra,dec,mag,type,con,ngc,en])=>{const a=ra*15*D,d=dec*D;return {id:'M'+num,name:cn||'M'+num,en:en||'Messier '+num,designation:'M'+num,ngc,ra,dec,mag,type,con,eq:[Math.cos(d)*Math.cos(a),Math.cos(d)*Math.sin(a),Math.sin(d)],v:[0,0,0],az:0,alt:0,deepSky:true};});
 const catalog=[...bodies,...stars,...deepSky],byId=new Map(catalog.map(x=>[x.id,x])),byHip=new Map(stars.map(x=>[x.hip,x]));
@@ -19,7 +20,8 @@ function now(){return new Date(Date.now()+offset);}function observer(){return ne
 function sync(){document.body.classList.toggle('red',cfg.night);$('night').classList.toggle('active',cfg.night);$('place').textContent=cfg.place;$('mode').textContent=ar?'实景 AR · 实验功能':tracking?(!deviceView?'正在获取自动方向':sensorAccuracy<2?'手机指向识星 · 方向待校准':'手机指向识星'):'自由探索';$('ar').classList.toggle('active',ar||arPending);$('ar').disabled=arPending;$('calibrate').hidden=!tracking;document.body.classList.toggle('ar',ar);$('track').classList.toggle('active',tracking);$('clock').textContent=fmt(now());$('time').textContent=offset===0?'◷ 现在':'◷ '+fmt(now());if(window.NativeSky)NativeSky.setCoordinates(cfg.lat,cfg.lon);dirty=true;}
 function calculate(){
  const t=now(),obs=observer(),rot=A.Rotation_EQJ_HOR(t,obs).rot;
- for(const s of [...stars,...deepSky]){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
+ for(const s of stars){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
+ for(const s of deepSky){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
  for(const b of bodies){const eq=A.Equator(b.en,t,obs,true,true),h=A.Horizon(t,obs,eq.ra,eq.dec,'normal'),ill=A.Illumination(b.en,t);Object.assign(b,{ra:eq.ra,dec:eq.dec,dist:eq.dist,az:h.azimuth,alt:h.altitude,mag:ill.mag,v:M.vec(h.azimuth,h.altitude),phase:ill.phase_fraction});}
  lastCalc=Date.now();dirty=true;sync();if(selected)selection(selected);
 }
@@ -34,8 +36,7 @@ function render(){
  ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>{let q=p(M.vec(i*90,0));if(q)ctx.fillText(n,q[0],q[1]+20);});
  if(showLines){for(const group of patterns){ctx.strokeStyle='#99b0ff42';ctx.lineWidth=.8;let points=[];for(const path of group.paths){let prev=null;for(const hip of path){const s=byHip.get(hip),q=s?p(s.v):null;if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.8){ctx.beginPath();ctx.moveTo(...prev);ctx.lineTo(...q);ctx.stroke();}if(q&&q[0]>0&&q[0]<width&&q[1]>0&&q[1]<height)points.push(q);prev=q;}}if(points.length>2){let x=points.reduce((a,q)=>a+q[0],0)/points.length,y=points.reduce((a,q)=>a+q[1],0)/points.length;ctx.font='12px system-ui';ctx.fillStyle='#9caedb90';ctx.fillText(group.name,x,y-20);}}}
  const limit=Math.min(7,5.2+Math.log2(85/fov));let labelBoxes=[];
- for(const s of [...stars,...bodies]){
-  if(s.mag>limit&&s!==selected)continue;const q=p(s.v);if(!q||q[0]<-15||q[0]>width+15||q[1]<-15||q[1]>height+15)continue;
+ function drawPoint(s){const q=p(s.v);if(!q||q[0]<-15||q[0]>width+15||q[1]<-15||q[1]>height+15)return;
   const isBody=!!s.color,r=isBody?(s.en==='Sun'||s.en==='Moon'?8:4):Math.max(.65,2.5-s.mag*.30);
   ctx.globalAlpha=s.alt<0?.28:1;ctx.fillStyle=s.color||(s.ci>1?'#ffd4ab':s.ci<.1?'#cadbff':'#eef1ff');
   if(s.mag<1.5){ctx.globalAlpha*=.13;ctx.beginPath();ctx.arc(q[0],q[1],r*3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=s.alt<0?.28:1;}
@@ -44,6 +45,9 @@ function render(){
   if(isBody||s.mag<1.7||s===selected){ctx.font=isBody?'12px system-ui':'10px system-ui';const tw=ctx.measureText(s.name).width,box=[q[0]-tw/2,q[1]+r+8,tw,15];if(isBody||!labelBoxes.some(b=>Math.abs(b[0]-box[0])<(b[2]+box[2])/2+20&&Math.abs(b[1]-box[1])<19)){ctx.fillStyle=isBody?'#e5e7f0':'#aab6d0';ctx.fillText(s.name,q[0],q[1]+r+19);labelBoxes.push(box);}}
   hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
  }
+ for(const s of starsByMagnitude){if(s.mag>limit)break;drawPoint(s);}
+ for(const s of bodies)drawPoint(s);
+ if(selected&&!selected.color&&!selected.deepSky&&selected.mag>limit)drawPoint(selected);
  // Catalog magnitudes of extended objects are integrated values; only draw a modest symbol.
  for(const s of deepSky){
   if(s!==selected&&(s.mag>6.5||fov>90))continue;
@@ -55,7 +59,16 @@ function render(){
  }
  ctx.strokeStyle='#ffffff25';ctx.beginPath();ctx.moveTo(width/2-7,height/2);ctx.lineTo(width/2+7,height/2);ctx.moveTo(width/2,height/2-7);ctx.lineTo(width/2,height/2+7);ctx.stroke();
  const dirs=['北','东北','东','东南','南','西南','西','西北'];$('bearing').textContent=dirs[Math.round(viewAz/45)%8]+' · '+Math.round(viewAz)+'°';$('elevation').textContent='仰角 '+Math.round(viewAlt)+'° · 视场 '+Math.round(fov)+'°';
- if(selected&&tracking){const da=M.delta(selected.az,viewAz),dh=selected.alt-viewAlt;$('target').textContent=selected.name+'  '+(Math.abs(da)<3&&Math.abs(dh)<3?'◎ 已对准':(da>0?'向右 ':'向左 ')+Math.round(Math.abs(da))+'° · '+(dh>0?'抬高 ':'降低 ')+Math.round(Math.abs(dh))+'°');}else $('target').textContent='';
+ const marker=$('guide');marker.hidden=true;
+ if(selected&&tracking){
+  if(!deviceView){$('target').textContent='正在读取方向…';}
+  else if(selected.alt<0){$('target').textContent=selected.name+'在地平线下，现在无法观测';}
+  else{
+   const guide=M.targetGuide(selected.v,basis,width,height,fov);
+   $('target').textContent=selected.name+(guide.behind?' · 请转身寻找':guide.aligned?' · ◎ 已对准':' · 向屏幕'+guide.direction+'移动手机 · 偏离 '+Math.round(guide.angle)+'°');
+   if(!guide.behind&&!guide.aligned&&!guide.onScreen){marker.hidden=false;marker.style.left=guide.x+'px';marker.style.top=guide.y+'px';marker.style.transform='translate(-50%,-50%) rotate('+guide.rotation+'rad)';}
+  }
+ }else $('target').textContent='';
 }
 let lastDraw=0;function frame(t){if(!document.hidden&&t-lastDraw>=32){render();lastDraw=t;}requestAnimationFrame(frame);}requestAnimationFrame(frame);
 setInterval(()=>{if(!document.hidden&&Date.now()-lastCalc>30000)calculate();},1000);
@@ -121,7 +134,7 @@ $('tonight').onclick=showPlanner;
 $('saved').onclick=()=>{const b=openSheet('观测收藏');const actions=el('div',undefined,'backup-actions');actions.append(button('导出备份',exportBackup),button('导入备份',importBackup));b.append(actions);const objects=Object.keys(notes).map(id=>byId.get(id)).filter(Boolean);if(!objects.length)b.append(el('p','点击任意天体，在详情中保存收藏和观测笔记。记录保存在本机，可导出 JSON 备份并在其他设备导入。','copy'));else listObjects(b,objects);};
 $('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}if(window.NativeSky&&NativeSky.stopLocation)NativeSky.stopLocation();setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
 $('earlier').onclick=()=>{if(ar)return;offset-=3600000;calculate();};$('later').onclick=()=>{if(ar)return;offset+=3600000;calculate();};$('time').onclick=()=>{if(ar)return;const b=openSheet('穿越时间');b.append(el('p','选择本地日期与时间，查看那一刻的天空。当前 '+fmt(now()),'copy'));const input=el('input');input.type='datetime-local';const date=now();input.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);input.min='1900-01-01T00:00';input.max='2100-12-31T23:59';b.append(input,button('前往这一刻',()=>{const t=new Date(input.value);if(!input.value||!Number.isFinite(+t)||t.getFullYear()<1900||t.getFullYear()>2100){toast('请选择 1900～2100 年的有效时间');return;}offset=+t-Date.now();calculate();$('sheet').close();},'primary'),button('返回现在',()=>{offset=0;calculate();$('sheet').close();},'secondary'));};
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.6 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会显示方向引导。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.7 / 免费 · 离线 · 无广告','tag'));for(const text of ['拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 8 组常见星座/星群连线。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}
