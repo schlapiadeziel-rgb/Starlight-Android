@@ -9,6 +9,14 @@ for(const [az,alt] of [[0,0],[90,45],[270,-40],[359,85]]){
 assert.equal(M.delta(1,359),2);assert.equal(M.delta(359,1),-2);
 assert(M.project(M.vec(10,0),M.basis(0,0),400,800,90)[0]>200);
 assert(M.project(M.vec(0,10),M.basis(0,0),400,800,90)[1]<400);
+for(const roll of [0,Math.PI/4,Math.PI]){
+ const b=M.basis(135,25),quick=M.projector(b,390,844,75,roll);
+ for(const point of [M.vec(135,25),M.vec(150,35),M.vec(250,-15)])assert.deepEqual(quick(point),M.project(point,b,390,844,75,roll));
+}
+// The source for the dust band is the astronomical Galactic frame, centered near Sagittarius.
+const gal=A.Rotation_GAL_EQJ().rot,galCenter=[gal[0][0],gal[0][1],gal[0][2]];
+assert(Math.abs(((Math.atan2(galCenter[1],galCenter[0])*180/Math.PI+360)%360)-266.4)<.2);
+assert(Math.abs(Math.asin(galCenter[2])*180/Math.PI+28.94)<.2);
 // Independent Horizon vs J2000 rotation path, multiple sites, dates and poles.
 for(const date of ['2026-09-20T12:00:00Z','2000-01-01T12:00:00Z','2040-06-21T00:00:00Z']){
  const t=new Date(date);

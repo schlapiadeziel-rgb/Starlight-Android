@@ -1,13 +1,17 @@
 'use strict';
-const $=id=>document.getElementById(id), A=Astronomy, M=SkyMath, D=Math.PI/180;
+const $=id=>document.getElementById(id), A=Astronomy, M=SkyMath, V=SkyVisual, D=Math.PI/180;
 const canvas=$('sky'),ctx=canvas.getContext('2d',{alpha:true});
+// Five reusable halos: only bright stars draw a sprite; dim stars keep cheap crisp arcs.
+const starHalos=V.colors.map(color=>{const layer=document.createElement('canvas');layer.width=layer.height=72;const c=layer.getContext('2d'),g=c.createRadialGradient(36,36,1,36,36,35);g.addColorStop(0,color+'7a');g.addColorStop(.14,color+'42');g.addColorStop(.48,color+'13');g.addColorStop(1,color+'00');c.fillStyle=g;c.fillRect(0,0,72,72);return layer;});
+const dustHalo=document.createElement('canvas');dustHalo.width=dustHalo.height=96;
+{const c=dustHalo.getContext('2d'),g=c.createRadialGradient(48,48,2,48,48,46);g.addColorStop(0,'#d6c6bb27');g.addColorStop(.55,'#b9a9ae13');g.addColorStop(1,'#a3a6c000');c.fillStyle=g;c.fillRect(0,0,96,96);}
 let cfg={lat:39.9042,lon:116.4074,place:'北京 · 示例位置',night:false},notes={};
 try{cfg={...cfg,...JSON.parse(localStorage.getItem('config')||'{}')};notes=JSON.parse(localStorage.getItem('notes')||'{}');}catch(e){}
 let ar=false,arPending=false,cameraFov=45,preArFov=85,preArTracking=false;
 let calibration={az:0,alt:0,scale:1};
 try{calibration={...calibration,...JSON.parse(localStorage.getItem('calibration')||'{}')};}catch(e){}
 let deviceView=null;
-let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=[],toastTimer;
+let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,showGrid=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=[],toastTimer;
 const chinese={Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',Rigel:'参宿七',Procyon:'南河三',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Spica:'角宿一',Antares:'心宿二',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',Polaris:'北极星',Castor:'北河二',Dubhe:'天枢',Merak:'天璇',Phecda:'天玑',Megrez:'天权',Alioth:'玉衡',Mizar:'开阳',Alkaid:'摇光',Alnitak:'参宿一',Alnilam:'参宿二',Mintaka:'参宿三',Bellatrix:'参宿五',Saiph:'参宿六',Schedar:'王良四',Caph:'王良一',Ruchbah:'阁道三',Segin:'阁道二',Acrux:'十字架二',Mimosa:'十字架三'};
 const stars=STAR_DATA.map(r=>{let ra=r[2]*15*D,d=r[3]*D;return {id:'s'+r[0],name:chinese[r[1]]||r[1],en:r[1],ra:r[2],dec:r[3],mag:r[4],con:r[5],ci:r[6],dist:r[7],hip:r[8],eq:[Math.cos(d)*Math.cos(ra),Math.cos(d)*Math.sin(ra),Math.sin(d)],v:[0,0,0],az:0,alt:0,type:'恒星'};});
 const starsByMagnitude=stars.slice().sort((a,b)=>a.mag-b.mag);
@@ -25,6 +29,16 @@ const constellations=[...constellationMap.values()];
 for(const s of constellations){const unique=new Set(s.paths.flat().filter(Boolean));if(unique.size){const sum=[0,0,0];for(const star of unique)for(let i=0;i<3;i++)sum[i]+=star.eq[i];const n=Math.hypot(...sum);if(n>.001)s.eq=sum.map(v=>v/n);}}
 const catalog=[...bodies,...stars,...deepSky,...constellations],byId=new Map(catalog.map(x=>[x.id,x]));
 const patterns=[{name:'北斗七星',paths:[[54061,53910,58001,59774,54061],[59774,62956,65378,67301]].map(path=>path.map(id=>byHip.get(id)||null))},...constellations.filter(s=>s.paths.length)];
+const fixedPoint=(x,y,z)=>({eq:[x,y,z],v:[0,0,0]});
+const eqPoint=(ra,dec)=>{const a=ra*15*D,d=dec*D;return fixedPoint(Math.cos(d)*Math.cos(a),Math.cos(d)*Math.sin(a),Math.sin(d));};
+const eqGrid=[];
+for(let h=0;h<24;h+=2){const line=[];for(let dec=-80;dec<=80;dec+=4)line.push(eqPoint(h,dec));eqGrid.push(line);}
+for(const dec of [-60,-30,0,30,60]){const line=[];for(let ra=0;ra<=24;ra+=.2)line.push(eqPoint(ra,dec));eqGrid.push(line);}
+const hourLabels=Array.from({length:12},(_,i)=>({name:i*2+'h',point:eqPoint(i*2,0)}));
+const galacticDust=[];
+{let seed=8191979;const rand=()=>{seed=(Math.imul(1664525,seed)+1013904223)>>>0;return seed/4294967296;};const r=A.Rotation_GAL_EQJ().rot;
+ for(let i=0;i<1750;i++){const l=rand()*2*Math.PI,b=(rand()+rand()+rand()+rand()-2)*.20,x=Math.cos(b)*Math.cos(l),y=Math.cos(b)*Math.sin(l),z=Math.sin(b);
+  const p=fixedPoint(r[0][0]*x+r[1][0]*y+r[2][0]*z,r[0][1]*x+r[1][1]*y+r[2][1]*z,r[0][2]*x+r[1][2]*y+r[2][2]*z);p.haze=i<370;p.size=p.haze?60+rand()*65:.45+rand()*.75;p.opacity=p.haze?.3+rand()*.35:.08+rand()*.24;galacticDust.push(p);}}
 const descriptions={Sun:'太阳是距离地球最近的恒星。切勿用肉眼、望远镜或相机直接观察太阳；星图定位不代表可以安全直视。',Moon:'月球是地球的天然卫星。明暗交界线附近的地形在望远镜中更容易辨认。',Mercury:'水星运行在太阳附近，通常在日出前或日落后的低空短暂出现。',Venus:'金星常被称为启明星或长庚星，是夜空中非常明亮的行星。',Mars:'火星呈现偏橙红的色调。它与地球的距离不断变化，亮度也随之改变。',Jupiter:'木星是太阳系最大的行星。用合适的双筒镜或望远镜可尝试寻找伽利略卫星。',Saturn:'土星拥有显著的环系统，辨认光环需要望远镜。',Uranus:'天王星是冰巨星，观测通常需要双筒镜或望远镜。',Neptune:'海王星距离遥远，需要望远镜观测。',Pluto:'冥王星是柯伊伯带中的矮行星，极难通过小型望远镜目视辨认。'};
 function now(){return new Date(Date.now()+offset);}function observer(){return new A.Observer(cfg.lat,cfg.lon,0);}function save(){localStorage.setItem('config',JSON.stringify(cfg));}function toast(s){$('toast').textContent=s;$('toast').style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.opacity=0,3500);}function fmt(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});}
 function sync(){document.body.classList.toggle('red',cfg.night);$('night').classList.toggle('active',cfg.night);$('place').textContent=cfg.place;$('mode').textContent=ar?'实景 AR · 实验功能':tracking?(!deviceView?'正在获取自动方向':sensorAccuracy<2?'手机指向识星 · 方向待校准':'手机指向识星'):'自由探索';$('ar').classList.toggle('active',ar||arPending);$('ar').disabled=arPending;$('calibrate').hidden=!tracking;document.body.classList.toggle('ar',ar);$('track').classList.toggle('active',tracking);$('clock').textContent=fmt(now());$('time').textContent=offset===0?'◷ 现在':'◷ '+fmt(now());if(window.NativeSky)NativeSky.setCoordinates(cfg.lat,cfg.lon);dirty=true;}
@@ -32,27 +46,39 @@ function calculate(){
  const t=now(),obs=observer(),rot=A.Rotation_EQJ_HOR(t,obs).rot;
  for(const s of stars){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
  for(const s of [...deepSky,...constellations]){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
+ // Static art and coordinate paths follow exactly the same J2000-to-horizon rotation.
+ for(const s of [...eqGrid.flat(),...hourLabels.map(x=>x.point),...galacticDust]){const [x,y,z]=s.eq;s.v[0]=-(rot[0][1]*x+rot[1][1]*y+rot[2][1]*z);s.v[1]=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z;s.v[2]=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;}
  for(const b of bodies){const eq=A.Equator(b.en,t,obs,true,true),h=A.Horizon(t,obs,eq.ra,eq.dec,'normal'),ill=A.Illumination(b.en,t);Object.assign(b,{ra:eq.ra,dec:eq.dec,dist:eq.dist,az:h.azimuth,alt:h.altitude,mag:ill.mag,v:M.vec(h.azimuth,h.altitude),phase:ill.phase_fraction});}
  lastCalc=Date.now();dirty=true;sync();if(selected)selection(selected);
 }
 function resize(){width=innerWidth;height=innerHeight;const d=Math.min(devicePixelRatio||1,2);canvas.width=width*d;canvas.height=height*d;ctx.setTransform(d,0,0,d,0,0);dirty=true;}window.addEventListener('resize',resize);
 function render(){
  if(!dirty)return;dirty=false;hit=[];ctx.clearRect(0,0,width,height);
- const grad=ctx.createLinearGradient(0,0,width,height);grad.addColorStop(0,'#060a15');grad.addColorStop(.5,'#101a30');grad.addColorStop(1,'#070b16');if(!ar){ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);}else{ctx.fillStyle='#04091526';ctx.fillRect(0,0,width,height);}
+ const sunAlt=bodies[0].alt,bright=sunAlt>-6,sky=V.palette(sunAlt,cfg.night);
+ if(!ar){const grad=ctx.createLinearGradient(0,0,0,height);grad.addColorStop(0,sky[0]);grad.addColorStop(.52,sky[1]);grad.addColorStop(1,sky[2]);ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);}else{ctx.fillStyle='#04091526';ctx.fillRect(0,0,width,height);}
  const viewAz=az,viewAlt=alt;
- const basis=tracking&&deviceView?deviceView:M.basis(viewAz,viewAlt),p=v=>M.project(v,basis,width,height,fov,tracking?0:roll);
+ const basis=tracking&&deviceView?deviceView:M.basis(viewAz,viewAlt),p=M.projector(basis,width,height,fov,tracking?0:roll);
+ if(!ar&&!cfg.night&&sunAlt>-18){const sun=p(bodies[0].v);if(sun&&sun[0]>-180&&sun[0]<width+180&&sun[1]>-180&&sun[1]<height+180){const glow=ctx.createRadialGradient(sun[0],sun[1],4,sun[0],sun[1],180);glow.addColorStop(0,'#ffcf9670');glow.addColorStop(.35,'#ffb37724');glow.addColorStop(1,'#ffb37700');ctx.fillStyle=glow;ctx.fillRect(sun[0]-180,sun[1]-180,360,360);}}
+ if(!ar&&sunAlt<-9){for(const s of galacticDust){if(s.v[2]<0)continue;const q=p(s.v);if(!q||q[0]<-70||q[0]>width+70||q[1]<-70||q[1]>height+70)continue;ctx.globalAlpha=s.opacity*Math.min(1,(-sunAlt-9)/9);if(s.haze)ctx.drawImage(dustHalo,q[0]-s.size/2,q[1]-s.size/2,s.size,s.size);else{ctx.fillStyle='#c5d4e5';ctx.fillRect(q[0],q[1],s.size,s.size);}}ctx.globalAlpha=1;}
+ if(showGrid){ctx.textAlign='center';ctx.strokeStyle=bright?'#e8f5ff42':'#a9b4d345';ctx.lineWidth=.7;for(const line of eqGrid){ctx.beginPath();let prev=null;for(const star of line){const q=p(star.v);if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.55)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.stroke();}
+  ctx.fillStyle=bright?'#edfaff':'#afb8d8';ctx.font='10px system-ui';for(const label of hourLabels){const q=p(label.point.v);if(q&&q[0]>55&&q[0]<width-80&&q[1]>85&&q[1]<height-100)ctx.fillText(label.name,q[0],q[1]);}
+  ctx.strokeStyle=bright?'#d4fffa90':'#8ee4d48c';ctx.fillStyle=bright?'#effff8':'#b5eee7';for(const angle of [10,20,30]){if(angle>fov*.75)continue;ctx.beginPath();for(let i=0;i<=96;i++){const t=i*2*Math.PI/96,a=angle*D,v=[Math.cos(a)*basis.f[0]+Math.sin(a)*(Math.cos(t)*basis.r[0]+Math.sin(t)*basis.u[0]),Math.cos(a)*basis.f[1]+Math.sin(a)*(Math.cos(t)*basis.r[1]+Math.sin(t)*basis.u[1]),Math.cos(a)*basis.f[2]+Math.sin(a)*(Math.cos(t)*basis.r[2]+Math.sin(t)*basis.u[2])],q=p(v);if(q){if(i===0)ctx.moveTo(...q);else ctx.lineTo(...q);}}ctx.stroke();const up=p([Math.cos(angle*D)*basis.f[0]+Math.sin(angle*D)*basis.u[0],Math.cos(angle*D)*basis.f[1]+Math.sin(angle*D)*basis.u[1],Math.cos(angle*D)*basis.f[2]+Math.sin(angle*D)*basis.u[2]]);if(up&&up[1]>90&&up[1]<height-100)ctx.fillText(angle+'°',up[0],up[1]-5);}}
  // Horizon and altitude circles are actual horizontal coordinates.
- for(let h=0;h<=60;h+=30){ctx.strokeStyle=h===0?'#a9d5c055':'#9abbe410';ctx.lineWidth=1;ctx.beginPath();let prev=null;for(let a=0;a<=360;a+=2){let q=p(M.vec(a,h));if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width/3)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.stroke();}
- ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle='#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>{let q=p(M.vec(i*90,0));if(q)ctx.fillText(n,q[0],q[1]+20);});
- if(showLines){const labels=[];ctx.strokeStyle='#99b0ff42';ctx.lineWidth=.8;for(const group of patterns){let points=0;for(const path of group.paths){let prev=null;for(const s of path){const q=s&&s.alt>=0?p(s.v):null;if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.8){ctx.beginPath();ctx.moveTo(...prev);ctx.lineTo(...q);ctx.stroke();}if(q&&q[0]>0&&q[0]<width&&q[1]>0&&q[1]<height)points++;prev=q;}}if(points>2){const anchor=group.constellation?group:byHip.get(62956),q=anchor.alt>=0?p(anchor.v):null;if(q&&q[0]>35&&q[0]<width-35&&q[1]>50&&q[1]<height-100)labels.push({name:group.name,x:q[0],y:q[1],points});}}labels.sort((a,b)=>b.points-a.points);ctx.font='12px system-ui';ctx.fillStyle='#9caedb90';const used=[];for(const l of labels){if(used.length>=12)break;if(used.some(v=>Math.abs(v.x-l.x)<90&&Math.abs(v.y-l.y)<25))continue;ctx.fillText(l.name,l.x,l.y-20);used.push(l);}}
+ for(let h=0;h<=60;h+=30){ctx.strokeStyle=h===0?(bright?'#effcff75':'#a9d5c055'):(bright?'#eefaff28':'#9abbe410');ctx.lineWidth=1;ctx.beginPath();let prev=null;for(let a=0;a<=360;a+=2){let q=p(M.vec(a,h));if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width/3)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.stroke();}
+ ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle=bright?'#e8f4ff':'#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>{let q=p(M.vec(i*90,0));if(q)ctx.fillText(n,q[0],q[1]+20);});
+ if(showLines){const labels=[];ctx.strokeStyle=bright?'#e8edff2e':'#99b0ff2c';ctx.lineWidth=.8;for(const group of patterns){let points=0;for(const path of group.paths){let prev=null;for(const s of path){const q=s&&s.alt>=0?p(s.v):null;if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.8){ctx.beginPath();ctx.moveTo(...prev);ctx.lineTo(...q);ctx.stroke();}if(q&&q[0]>0&&q[0]<width&&q[1]>0&&q[1]<height)points++;prev=q;}}if(points>2){const anchor=group.constellation?group:byHip.get(62956),q=anchor.alt>=0?p(anchor.v):null;if(q&&q[0]>35&&q[0]<width-35&&q[1]>50&&q[1]<height-100)labels.push({name:group.name,x:q[0],y:q[1],points});}}labels.sort((a,b)=>b.points-a.points);ctx.font='12px system-ui';ctx.fillStyle=bright?'#e8f4ffb0':'#9caedb90';const used=[];for(const l of labels){if(used.length>=12)break;if(used.some(v=>Math.abs(v.x-l.x)<90&&Math.abs(v.y-l.y)<25))continue;ctx.fillText(l.name,l.x,l.y-20);used.push(l);}}
+ if(selected&&selected.constellation&&showLines){for(const path of selected.paths){ctx.beginPath();let prev=null;for(const s of path){const q=s&&s.alt>=0?p(s.v):null;if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.8)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.lineWidth=9;ctx.strokeStyle='#78b9ff18';ctx.stroke();ctx.lineWidth=1.7;ctx.strokeStyle='#b2deffd0';ctx.stroke();}}
  const limit=Math.min(7,5.2+Math.log2(85/fov));let labelBoxes=[];
- function drawPoint(s){const q=p(s.v);if(!q||q[0]<-15||q[0]>width+15||q[1]<-15||q[1]>height+15)return;
-  const isBody=!!s.color,r=isBody?(s.en==='Sun'||s.en==='Moon'?8:4):Math.max(.65,2.5-s.mag*.30);
-  ctx.globalAlpha=s.alt<0?.28:1;ctx.fillStyle=s.color||(s.ci>1?'#ffd4ab':s.ci<.1?'#cadbff':'#eef1ff');
-  if(s.mag<1.5){ctx.globalAlpha*=.13;ctx.beginPath();ctx.arc(q[0],q[1],r*3,0,Math.PI*2);ctx.fill();ctx.globalAlpha=s.alt<0?.28:1;}
+ function drawPoint(s){const isBody=!!s.color,r=isBody?(s.en==='Sun'||s.en==='Moon'?8:4):Math.max(.7,2.8-s.mag*.34);
+  const visible=s.en==='Sun'||s.en==='Moon'?1:V.visibility(s.mag,sunAlt),alpha=(s.alt<0?.28:1)*Math.max(s===selected ? .55 : 0,visible);
+  if(alpha<.025)return;
+  const q=p(s.v);if(!q||q[0]<-15||q[0]>width+15||q[1]<-15||q[1]>height+15)return;
+  const colorIndex=isBody?2:V.colorIndex(s.ci);
+  ctx.globalAlpha=alpha;ctx.fillStyle=s.color||V.colors[colorIndex];
+  if(!isBody&&s.mag<2.2){const glow=starHalos[colorIndex],size=s.mag<0?45:34;ctx.drawImage(glow,q[0]-size/2,q[1]-size/2,size,size);}
   ctx.beginPath();ctx.arc(q[0],q[1],r,0,Math.PI*2);ctx.fill();
   if(s===selected){ctx.strokeStyle='#d3deff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(q[0],q[1],r+10,0,Math.PI*2);ctx.stroke();}
-  if(isBody||s.mag<1.7||s===selected){ctx.font=isBody?'12px system-ui':'10px system-ui';const tw=ctx.measureText(s.name).width,box=[q[0]-tw/2,q[1]+r+8,tw,15];if(isBody||!labelBoxes.some(b=>Math.abs(b[0]-box[0])<(b[2]+box[2])/2+20&&Math.abs(b[1]-box[1])<19)){ctx.fillStyle=isBody?'#e5e7f0':'#aab6d0';ctx.fillText(s.name,q[0],q[1]+r+19);labelBoxes.push(box);}}
+  if(isBody||s.mag<1.7||s===selected){ctx.font=isBody?'12px system-ui':'10px system-ui';const tw=ctx.measureText(s.name).width,box=[q[0]-tw/2,q[1]+r+8,tw,15];if(isBody||!labelBoxes.some(b=>Math.abs(b[0]-box[0])<(b[2]+box[2])/2+20&&Math.abs(b[1]-box[1])<19)){ctx.fillStyle=bright?'#f6fbff':isBody?'#e5e7f0':'#aab6d0';ctx.fillText(s.name,q[0],q[1]+r+19);labelBoxes.push(box);}}
   hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
  }
  for(const s of starsByMagnitude){if(s.mag>limit)break;drawPoint(s);}
@@ -61,7 +87,7 @@ function render(){
  if(selected&&selected.constellation){const q=p(selected.v);if(q){ctx.strokeStyle='#c9bcff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],12,0,Math.PI*2);ctx.stroke();ctx.font='13px system-ui';ctx.fillStyle='#e7dfff';ctx.fillText(selected.name,q[0],q[1]+29);}}
  // Catalog magnitudes of extended objects are integrated values; only draw a modest symbol.
  for(const s of deepSky){
-  if(s!==selected&&(s.mag>6.5||fov>90))continue;
+  if(s!==selected&&(s.mag>6.5||fov>90||sunAlt>-9))continue;
   const q=p(s.v);if(!q||q[0]<-12||q[0]>width+12||q[1]<-12||q[1]>height+12)continue;
   ctx.globalAlpha=s.alt<0?.27:1;ctx.strokeStyle='#70d9ca';ctx.lineWidth=s===selected?2:1;
   const size=s===selected?7:4;ctx.beginPath();ctx.moveTo(q[0],q[1]-size);ctx.lineTo(q[0]+size,q[1]);ctx.lineTo(q[0],q[1]+size);ctx.lineTo(q[0]-size,q[1]);ctx.closePath();ctx.stroke();
@@ -69,7 +95,7 @@ function render(){
   hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
  }
  ctx.strokeStyle='#ffffff25';ctx.beginPath();ctx.moveTo(width/2-7,height/2);ctx.lineTo(width/2+7,height/2);ctx.moveTo(width/2,height/2-7);ctx.lineTo(width/2,height/2+7);ctx.stroke();
- const dirs=['北','东北','东','东南','南','西南','西','西北'];$('bearing').textContent=dirs[Math.round(viewAz/45)%8]+' · '+Math.round(viewAz)+'°';$('elevation').textContent='仰角 '+Math.round(viewAlt)+'° · 视场 '+Math.round(fov)+'°';
+ const dirs=['北','东北','东','东南','南','西南','西','西北'];$('bearing').textContent=dirs[Math.round(viewAz/45)%8]+' · '+Math.round(viewAz)+'°';$('elevation').textContent='仰角 '+Math.round(viewAlt)+'° · 视场 '+Math.round(fov)+'° · '+(sunAlt>=0?'白天':sunAlt>=-18?'暮光':'夜间');
  const marker=$('guide');marker.hidden=true;
  if(selected&&tracking){
   if(!deviceView){$('target').textContent='正在读取方向…';}
@@ -107,7 +133,7 @@ function nativeLocation(lat,lon){if(!Number.isFinite(lat)||!Number.isFinite(lon)
 function nativeLocationError(message){toast(message+'；也可点顶部位置手动填写经纬度');}
 function setPlace(lat,lon,name){cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
 $('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('方向自动跟随手机背面；请先设置实际位置');};
-$('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
+$('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('grid').onclick=()=>{showGrid=!showGrid;$('grid').classList.toggle('active',showGrid);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
 let pointers=new Map(),start=null,moved=false,lastDist=0;
 canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);start=[e.clientX,e.clientY];moved=false;if(pointers.size===2){let ps=[...pointers.values()];lastDist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);}};
 canvas.onpointermove=e=>{if(!pointers.has(e.pointerId))return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(Math.hypot(e.clientX-start[0],e.clientY-start[1])>7)moved=true;if(!moved)return;if(ar)return;if(tracking)stopTrack();if(pointers.size===2){let ps=[...pointers.values()],dist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);if(lastDist>0&&dist>0)fov=Math.max(12,Math.min(110,fov*lastDist/dist));lastDist=dist;}else{az=(az-(e.clientX-old[0])*fov/width+360)%360;alt=Math.max(-85,Math.min(85,alt+(e.clientY-old[1])*fov/width));}dirty=true;};
@@ -145,7 +171,7 @@ $('tonight').onclick=showPlanner;
 $('saved').onclick=()=>{const b=openSheet('观测收藏');const actions=el('div',undefined,'backup-actions');actions.append(button('导出备份',exportBackup),button('导入备份',importBackup));b.append(actions);const objects=Object.keys(notes).map(id=>byId.get(id)).filter(Boolean);if(!objects.length)b.append(el('p','点击任意天体，在详情中保存收藏和观测笔记。记录保存在本机，可导出 JSON 备份并在其他设备导入。','copy'));else listObjects(b,objects);};
 $('loc').onclick=()=>{const b=openSheet('你在哪里看星星？');b.append(el('p','位置决定天空中天体的方向。默认是北京示例位置，请设置你的实际位置。经纬度仅用于本机计算。','copy'));b.append(button('◎ 使用手机定位',()=>{if(window.NativeSky){NativeSky.locate();toast('正在获取位置，请确保系统定位已开启');$('sheet').close();}else toast('浏览器预览请手动填写位置');},'primary'));let lat=el('input'),lon=el('input');lat.type=lon.type='number';lat.step=lon.step='any';lat.value=cfg.lat;lon.value=cfg.lon;lat.min=-90;lat.max=90;lon.min=-180;lon.max=180;b.append(el('label','纬度（北纬为正，南纬为负）'),lat,el('label','经度（东经为正，西经为负）'),lon,button('保存位置',()=>{const la=Number(lat.value),lo=Number(lon.value);if(!lat.value.trim()||!lon.value.trim()||!Number.isFinite(la)||!Number.isFinite(lo)||Math.abs(la)>90||Math.abs(lo)>180){toast('请输入有效纬度 −90～90、经度 −180～180');return;}if(window.NativeSky&&NativeSky.stopLocation)NativeSky.stopLocation();setPlace(la,lo,la.toFixed(2)+'°, '+lo.toFixed(2)+'°');$('sheet').close();},'primary'));};
 $('earlier').onclick=()=>{if(ar)return;offset-=3600000;calculate();};$('later').onclick=()=>{if(ar)return;offset+=3600000;calculate();};$('time').onclick=()=>{if(ar)return;const b=openSheet('穿越时间');b.append(el('p','选择本地日期与时间，查看那一刻的天空。当前 '+fmt(now()),'copy'));const input=el('input');input.type='datetime-local';const date=now();input.value=new Date(date.getTime()-date.getTimezoneOffset()*60000).toISOString().slice(0,16);input.min='1900-01-01T00:00';input.max='2100-12-31T23:59';b.append(input,button('前往这一刻',()=>{const t=new Date(input.value);if(!input.value||!Number.isFinite(+t)||t.getFullYear()<1900||t.getFullYear()>2100){toast('请选择 1900～2100 年的有效时间');return;}offset=+t-Date.now();calculate();$('sheet').close();},'primary'),button('返回现在',()=>{offset=0;calculate();$('sheet').close();},'secondary'));};
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.2.9 / 免费 · 离线 · 无广告','tag'));for(const text of ['系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.0 / 免费 · 离线 · 无广告','tag'));for(const text of ['系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','天空颜色和恒星明暗随太阳高度变化，亮星带有柔和光晕；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示，不包含天气、云量和光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星/ISS 追踪、云端十亿星库、AI、天气、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}

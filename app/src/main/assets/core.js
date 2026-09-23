@@ -4,7 +4,8 @@
  function vec(az,alt){az*=D;alt*=D;return [Math.sin(az)*Math.cos(alt),Math.cos(az)*Math.cos(alt),Math.sin(alt)];}
  function basis(az,alt){let a=az*D,h=alt*D;return {f:vec(az,alt),r:[Math.cos(a),-Math.sin(a),0],u:[-Math.sin(a)*Math.sin(h),-Math.cos(a)*Math.sin(h),Math.cos(h)]};}
  function dot(a,b){return a[0]*b[0]+a[1]*b[1]+a[2]*b[2];}
- function project(v,b,w,h,fov,roll=0){let z=dot(v,b.f);if(z<=.03)return null;let x=dot(v,b.r),y=dot(v,b.u),c=Math.cos(roll),s=Math.sin(roll),f=w/(2*Math.tan(fov*D/2));return [w/2+(x*c-y*s)*f/z,h/2-(x*s+y*c)*f/z];}
+ function projector(b,w,h,fov,roll=0){const c=Math.cos(roll),s=Math.sin(roll),f=w/(2*Math.tan(fov*D/2));return v=>{const z=dot(v,b.f);if(z<=.03)return null;const x=dot(v,b.r),y=dot(v,b.u);return [w/2+(x*c-y*s)*f/z,h/2-(x*s+y*c)*f/z];};}
+ function project(v,b,w,h,fov,roll=0){return projector(b,w,h,fov,roll)(v);}
  function delta(a,b){return ((a-b+540)%360)-180;}
  function deviceBasis(matrix,declination=0){
   if(!Array.isArray(matrix)||matrix.length!==9||!matrix.every(Number.isFinite)||!Number.isFinite(declination))return null;
@@ -26,5 +27,5 @@
   const x=onScreen?q[0]:w/2+dx*edgeScale,y=onScreen?q[1]:h/2+dy*edgeScale;
   return {behind:false,aligned:angle<3,onScreen,direction,angle,x,y,rotation:Math.atan2(dy,dx)};
  }
- const api={vec,basis,project,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
+ const api={vec,basis,project,projector,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
