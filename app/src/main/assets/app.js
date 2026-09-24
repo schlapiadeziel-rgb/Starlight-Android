@@ -12,10 +12,11 @@ let ar=false,arPending=false,cameraFov=45,preArFov=85,preArTracking=false;
 let calibration={az:0,alt:0,scale:1};
 try{calibration={...calibration,...JSON.parse(localStorage.getItem('calibration')||'{}')};}catch(e){}
 let deviceView=null;
-let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,showGrid=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=[],toastTimer;
+let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,showGrid=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=M.hitGrid(),toastTimer;
 const chinese={Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',Rigel:'参宿七',Procyon:'南河三',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Spica:'角宿一',Antares:'心宿二',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',Polaris:'北极星',Castor:'北河二',Dubhe:'天枢',Merak:'天璇',Phecda:'天玑',Megrez:'天权',Alioth:'玉衡',Mizar:'开阳',Alkaid:'摇光',Alnitak:'参宿一',Alnilam:'参宿二',Mintaka:'参宿三',Bellatrix:'参宿五',Saiph:'参宿六',Schedar:'王良四',Caph:'王良一',Ruchbah:'阁道三',Segin:'阁道二',Acrux:'十字架二',Mimosa:'十字架三'};
 const stars=STAR_DATA.map(r=>{let ra=r[2]*15*D,d=r[3]*D;return {id:'s'+r[0],name:chinese[r[1]]||r[1],en:r[1],ra:r[2],dec:r[3],mag:r[4],con:r[5],ci:r[6],dist:r[7],hip:r[8],eq:[Math.cos(d)*Math.cos(ra),Math.cos(d)*Math.sin(ra),Math.sin(d)],v:[0,0,0],az:0,alt:0,type:'恒星'};});
 const starsByMagnitude=stars.slice().sort((a,b)=>a.mag-b.mag);
+let starCells=null;
 const bodies=[['Sun','太阳','#ffd07d'],['Moon','月亮','#ecedf1'],['Mercury','水星','#bea99b'],['Venus','金星','#ffe3b0'],['Mars','火星','#f1a285'],['Jupiter','木星','#edd6b6'],['Saturn','土星','#cfc099'],['Uranus','天王星','#a5dfdf'],['Neptune','海王星','#859eee'],['Pluto','冥王星','#c6b6a6']].map(([en,name,color])=>({id:en,en,name,color,type:en==='Moon'?'地球卫星':en==='Sun'?'恒星':en==='Pluto'?'矮行星':'行星',v:[0,0,0]}));
 const deepSky=MESSIER_DATA.map(([num,cn,ra,dec,mag,type,con,ngc,en])=>{const a=ra*15*D,d=dec*D;return {id:'M'+num,name:cn||'M'+num,en:en||'Messier '+num,designation:'M'+num,ngc,ra,dec,mag,type,con,eq:[Math.cos(d)*Math.cos(a),Math.cos(d)*Math.sin(a),Math.sin(d)],v:[0,0,0],az:0,alt:0,deepSky:true};});
 const byHip=new Map(stars.map(x=>[x.hip,x]));
@@ -47,6 +48,7 @@ function calculate(){
  if(offset!==0&&selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;$('target').textContent='';}
  const t=now(),obs=observer(),rot=A.Rotation_EQJ_HOR(t,obs).rot;
  for(const s of stars){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
+ starCells=M.starIndex(starsByMagnitude);
  for(const s of [...deepSky,...constellations]){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
  // Static art and coordinate paths follow exactly the same J2000-to-horizon rotation.
  for(const s of [...eqGrid.flat(),...hourLabels.map(x=>x.point),...galacticDust]){const [x,y,z]=s.eq;s.v[0]=-(rot[0][1]*x+rot[1][1]*y+rot[2][1]*z);s.v[1]=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z;s.v[2]=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;}
@@ -55,7 +57,7 @@ function calculate(){
 }
 function resize(){width=innerWidth;height=innerHeight;const d=Math.min(devicePixelRatio||1,2);canvas.width=width*d;canvas.height=height*d;ctx.setTransform(d,0,0,d,0,0);dirty=true;}window.addEventListener('resize',resize);
 function render(){
- if(!dirty)return;dirty=false;hit=[];ctx.clearRect(0,0,width,height);
+ if(!dirty)return;dirty=false;hit.clear();ctx.clearRect(0,0,width,height);
  const sunAlt=bodies[0].alt,bright=sunAlt>-6,sky=V.palette(sunAlt,cfg.night);
  if(!ar){const grad=ctx.createLinearGradient(0,0,0,height);grad.addColorStop(0,sky[0]);grad.addColorStop(.52,sky[1]);grad.addColorStop(1,sky[2]);ctx.fillStyle=grad;ctx.fillRect(0,0,width,height);}else{ctx.fillStyle='#04091526';ctx.fillRect(0,0,width,height);}
  const viewAz=az,viewAlt=alt;
@@ -91,9 +93,9 @@ function render(){
   }else{ctx.beginPath();ctx.arc(q[0],q[1],r,0,Math.PI*2);ctx.fill();}
   if(s===selected){ctx.strokeStyle='#d3deff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(q[0],q[1],r+10,0,Math.PI*2);ctx.stroke();}
   if(isBody||s.mag<1.7||s===selected){ctx.font=isBody?'12px system-ui':'10px system-ui';const tw=ctx.measureText(s.name).width,box=[q[0]-tw/2,q[1]+r+8,tw,15];if(isBody||!labelBoxes.some(b=>Math.abs(b[0]-box[0])<(b[2]+box[2])/2+20&&Math.abs(b[1]-box[1])<19)){ctx.fillStyle=bright?'#f6fbff':isBody?'#e5e7f0':'#aab6d0';ctx.fillText(s.name,q[0],q[1]+r+19);labelBoxes.push(box);}}
-  hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
+  hit.add(s,q[0],q[1]);ctx.globalAlpha=1;
  }
- for(const s of starsByMagnitude){if(s.mag>limit)break;drawPoint(s);}
+ for(const s of starCells.query(basis,width,height,fov,limit))drawPoint(s);
  for(const s of bodies)drawPoint(s);
  if(selected&&!selected.color&&!selected.deepSky&&!selected.constellation&&selected.mag>limit)drawPoint(selected);
  if(selected&&selected.constellation){const q=p(selected.v);if(q){ctx.strokeStyle='#c9bcff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],12,0,Math.PI*2);ctx.stroke();ctx.font='13px system-ui';ctx.fillStyle='#e7dfff';ctx.fillText(selected.name,q[0],q[1]+29);}}
@@ -104,10 +106,10 @@ function render(){
   ctx.globalAlpha=s.alt<0?.27:1;ctx.strokeStyle='#70d9ca';ctx.lineWidth=s===selected?2:1;
   const size=s===selected?7:4;ctx.beginPath();ctx.moveTo(q[0],q[1]-size);ctx.lineTo(q[0]+size,q[1]);ctx.lineTo(q[0],q[1]+size);ctx.lineTo(q[0]-size,q[1]);ctx.closePath();ctx.stroke();
   ctx.font='10px system-ui';ctx.fillStyle='#9ad8d0';ctx.fillText(s.designation,q[0],q[1]+size+14);
-  hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
+  hit.add(s,q[0],q[1]);ctx.globalAlpha=1;
  }
  if(issSnapshot&&offset===0&&Date.now()-issSnapshot.timestamp<12000&&issSnapshot.alt>=0){
-  const q=p(issSnapshot.v);if(q){ctx.strokeStyle='#95f1e7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(q[0],q[1]-8);ctx.lineTo(q[0]+8,q[1]);ctx.lineTo(q[0],q[1]+8);ctx.lineTo(q[0]-8,q[1]);ctx.closePath();ctx.stroke();ctx.font='11px system-ui';ctx.fillStyle='#c9fff6';ctx.fillText('ISS 快照',q[0],q[1]+23);hit.push({s:issSnapshot,x:q[0],y:q[1]});}
+  const q=p(issSnapshot.v);if(q){ctx.strokeStyle='#95f1e7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(q[0],q[1]-8);ctx.lineTo(q[0]+8,q[1]);ctx.lineTo(q[0],q[1]+8);ctx.lineTo(q[0]-8,q[1]);ctx.closePath();ctx.stroke();ctx.font='11px system-ui';ctx.fillStyle='#c9fff6';ctx.fillText('ISS 快照',q[0],q[1]+23);hit.add(issSnapshot,q[0],q[1]);}
  }
  ctx.strokeStyle='#ffffff25';ctx.beginPath();ctx.moveTo(width/2-7,height/2);ctx.lineTo(width/2+7,height/2);ctx.moveTo(width/2,height/2-7);ctx.lineTo(width/2,height/2+7);ctx.stroke();
  const dirs=['北','东北','东','东南','南','西南','西','西北'];$('bearing').textContent=dirs[Math.round(viewAz/45)%8]+' · '+Math.round(viewAz)+'°';$('elevation').textContent='仰角 '+Math.round(viewAlt)+'° · 视场 '+Math.round(fov)+'° · '+(sunAlt>=0?'白天':sunAlt>=-18?'暮光':'夜间');
@@ -153,7 +155,7 @@ $('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active
 let pointers=new Map(),start=null,moved=false,lastDist=0;
 canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);start=[e.clientX,e.clientY];moved=false;if(pointers.size===2){let ps=[...pointers.values()];lastDist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);}};
 canvas.onpointermove=e=>{if(!pointers.has(e.pointerId))return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(Math.hypot(e.clientX-start[0],e.clientY-start[1])>7)moved=true;if(!moved)return;if(ar)return;if(tracking)stopTrack();if(pointers.size===2){let ps=[...pointers.values()],dist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);if(lastDist>0&&dist>0)fov=Math.max(12,Math.min(110,fov*lastDist/dist));lastDist=dist;}else{az=(az-(e.clientX-old[0])*fov/width+360)%360;alt=Math.max(-85,Math.min(85,alt+(e.clientY-old[1])*fov/width));}dirty=true;};
-canvas.onpointerup=e=>{if(!moved&&pointers.size===1){let nearest=null,best=28;for(const p of hit){let d=Math.hypot(e.clientX-p.x,e.clientY-p.y);if(d<best){nearest=p.s;best=d;}}if(nearest)selection(nearest);else{selected=null;$('selection').hidden=true;$('hint').hidden=false;dirty=true;}}pointers.delete(e.pointerId);};canvas.onpointercancel=e=>pointers.delete(e.pointerId);canvas.onwheel=e=>{e.preventDefault();if(ar)return;fov=Math.max(12,Math.min(110,fov*(e.deltaY>0?1.1:.9)));dirty=true;};
+canvas.onpointerup=e=>{if(!moved&&pointers.size===1){const nearest=hit.nearest(e.clientX,e.clientY);if(nearest)selection(nearest);else{selected=null;$('selection').hidden=true;$('hint').hidden=false;dirty=true;}}pointers.delete(e.pointerId);};canvas.onpointercancel=e=>pointers.delete(e.pointerId);canvas.onwheel=e=>{e.preventDefault();if(ar)return;fov=Math.max(12,Math.min(110,fov*(e.deltaY>0?1.1:.9)));dirty=true;};
 function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}function button(text,fn,cls){const b=el('button',text,cls);b.onclick=fn;return b;}
 function openSheet(title){$('sheetTitle').textContent=title;$('sheetBody').replaceChildren();if(!$('sheet').open)$('sheet').showModal();return $('sheetBody');}$('close').onclick=()=>$('sheet').close();
 function selection(s){selected=s;const box=$('selection');box.hidden=false;$('hint').hidden=true;box.replaceChildren();let d=el('div');d.append(el('b',s.name),el('small',s.type+' · '+(s.alt>=0?'地平线上方 ':'地平线下方 ')+Math.abs(s.alt).toFixed(1)+'°'));box.append(d,button('探索 →',()=>details(s)));dirty=true;}

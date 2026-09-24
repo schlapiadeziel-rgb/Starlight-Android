@@ -69,5 +69,5 @@ run("selected={name:'目标',v:SkyMath.vec(70,0),alt:10,az:70};render();");asser
 run('selected.v=SkyMath.vec(0,0);dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('已对准'));assert.equal(w.document.getElementById('guide').hidden,true);
 run('selected.alt=-5;dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('地平线下'));
 run("selected=byId.get('Moon');tracking=false;az=selected.az;alt=selected.alt;dirty=true;render();");assert.equal(run('selected.id'),'Moon');
-run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.some(p=>p.s===selected)'));
+run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.nearest(width/2,height/2)===selected'));
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');

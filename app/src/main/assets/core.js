@@ -27,5 +27,43 @@
   const x=onScreen?q[0]:w/2+dx*edgeScale,y=onScreen?q[1]:h/2+dy*edgeScale;
   return {behind:false,aligned:angle<3,onScreen,direction,angle,x,y,rotation:Math.atan2(dy,dx)};
  }
- const api={vec,basis,project,projector,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
+
+ // Rebuilt only when horizon coordinates change, never on phone rotation.
+ function starIndex(stars){
+  const cells=new Map();
+  for(let rank=0;rank<stars.length;rank++){
+   const s=stars[rank],v=s.v,lat=Math.asin(Math.max(-1,Math.min(1,v[2])));
+   const lon=Math.atan2(v[0],v[1]),row=Math.min(11,Math.floor((lat/ D+90)/15)),col=Math.min(23,Math.floor((lon/D+180)/15)),key=row*24+col;
+   let cell=cells.get(key);
+   if(!cell){cell={center:vec(col*15-172.5,row*15-82.5),radius:0,items:[]};cells.set(key,cell);}
+   cell.radius=Math.max(cell.radius,Math.acos(Math.max(-1,Math.min(1,dot(cell.center,v))))+1e-7);
+   cell.items.push({s,rank});
+  }
+  return {query(b,w,h,fov,limit,padding=24){
+   const focal=w/(2*Math.tan(fov*D/2)),radius=Math.atan(Math.hypot(w/2+padding,h/2+padding)/focal),found=[];
+   for(const cell of cells.values()){
+    if(dot(cell.center,b.f)<Math.cos(Math.min(Math.PI,radius+cell.radius)))continue;
+    for(const item of cell.items){if(item.s.mag>limit)break;found.push(item);}
+   }
+   // Preserve magnitude order, label priority and equal-distance picking behavior.
+   found.sort((a,b)=>a.rank-b.rank);return found.map(item=>item.s);
+  }};
+ }
+ function hitGrid(size=56){
+  const cells=new Map();let order=0;
+  return {
+   clear(){cells.clear();order=0;},
+   add(s,x,y){const key=Math.floor(x/size)+','+Math.floor(y/size);let cell=cells.get(key);if(!cell){cell=[];cells.set(key,cell);}cell.push({s,x,y,order:order++});},
+   nearest(x,y,radius=28){
+    let best=radius*radius,result=null,first=Infinity;
+    for(let row=Math.floor((y-radius)/size);row<=Math.floor((y+radius)/size);row++)
+     for(let col=Math.floor((x-radius)/size);col<=Math.floor((x+radius)/size);col++){
+      const cell=cells.get(col+','+row);if(!cell)continue;
+      for(const p of cell){const d=(p.x-x)**2+(p.y-y)**2;if(d<best||(result!==null&&d===best&&p.order<first)){best=d;result=p.s;first=p.order;}}
+     }
+    return result;
+   }
+  };
+ }
+ const api={starIndex,hitGrid,vec,basis,project,projector,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

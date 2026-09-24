@@ -61,8 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.5-live-iss.apk
-          sha256sum Starlight-0.3.5-live-iss.apk > SHA256SUMS
-          if ! gh release view v0.3.5 >/dev/null 2>&1; then
-            gh release create v0.3.5 Starlight-0.3.5-live-iss.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.5 ISS live position' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.6-spatial-rendering.apk
+          sha256sum Starlight-0.3.6-spatial-rendering.apk > SHA256SUMS
+          if ! gh release view v0.3.6 >/dev/null 2>&1; then
+            gh release create v0.3.6 Starlight-0.3.6-spatial-rendering.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.6 Spatial rendering' --notes-file RELEASE_NOTES.md
           fi

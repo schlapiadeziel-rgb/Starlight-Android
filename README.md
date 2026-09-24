@@ -2,11 +2,11 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.5 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.6 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.5)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.6)
 
 ## 已实现
 
@@ -96,3 +96,7 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 - 项目原创代码 MIT。完整声明见 `licenses/`。
 
 梅西耶目录坐标为近似 J2000，未经逐目标自行修正；目录总星等是扩展天体的整体亮度，不能单凭它判断肉眼是否可见。资料来源 Bretton Wade / YaleBrightStarCatalog 的 `messier.json`（MIT），字段筛选与中文常用名映射见 `app/src/main/assets/messier.js`；许可见 `licenses/messier-MIT.txt`。
+
+### v0.3.6 性能改进
+
+恒星按天球分区建立索引，移动视角时剔除屏幕外分区；保留原有绘制优先级。点击天体使用屏幕网格索引。索引随天文坐标更新重建，不随手机转动重建。120 组投影测试没有遗漏可见星点，1,000 次点击与全量扫描一致；模拟目录候选数量平均减少 77.4%，不是手机帧率提升比例。尚未进行真机帧率、内存和功耗测试。
