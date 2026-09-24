@@ -6,8 +6,8 @@ android {
         applicationId 'org.starlight.free'
         minSdk 26
         targetSdk 35
-        versionCode 21
-        versionName '0.3.9'
+        versionCode 22
+        versionName '0.3.10'
     }
     signingConfigs {
         release {
@@ -28,3 +28,13 @@ android {
     }
     compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
 }
+
+
+// Original licensed images are packaged unchanged; extract during Android builds.
+def skyArtDir = layout.buildDirectory.dir('generated/skyArt')
+tasks.register('unpackSkyArt', Sync) {
+    from zipTree(file('artwork.zip'))
+    into skyArtDir
+}
+android.sourceSets.main.assets.srcDir(skyArtDir)
+tasks.named('preBuild').configure { dependsOn('unpackSkyArt') }

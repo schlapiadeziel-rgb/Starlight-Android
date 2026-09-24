@@ -11,7 +11,8 @@
   const [w,h]=data.size,points=[];
   for(let y=0;y<=steps;y++)for(let x=0;x<=steps;x++)points.push({x:x*w/steps,y:y*h/steps,eq:at(x*w/steps,y*h/steps),v:[0,0,0]});
   const triangles=[];for(let y=0;y<steps;y++)for(let x=0;x<steps;x++){const i=y*(steps+1)+x;triangles.push([i,i+1,i+steps+1],[i+1,i+steps+2,i+steps+1]);}
-  return {points,triangles,at};
+  const center=at(w/2,h/2),radius=Math.max(...points.map(p=>Math.acos(Math.max(-1,Math.min(1,p.eq.reduce((n,x,i)=>n+x*center[i],0))))));
+  return {points,triangles,at,size:[w,h],center:{eq:center,v:[0,0,0]},radius};
  }
  function draw(ctx,image,mesh,project,width,height){
   const projected=mesh.points.map(p=>p.v[2]>=0?project(p.v):null);
@@ -23,8 +24,13 @@
    const ux=q[1][0]-q[0][0],uy=q[1][1]-q[0][1],vx=q[2][0]-q[0][0],vy=q[2][1]-q[0][1];
    const A=(ux*ey-vx*dy)/det,B=(uy*ey-vy*dy)/det,C=(vx*dx-ux*ex)/det,D=(vy*dx-uy*ex)/det;
    ctx.save();ctx.beginPath();ctx.moveTo(...q[0]);ctx.lineTo(...q[1]);ctx.lineTo(...q[2]);ctx.closePath();ctx.clip();
-   ctx.transform(A,B,C,D,q[0][0]-A*a.x-C*a.y,q[0][1]-B*a.x-D*a.y);ctx.drawImage(image,0,0);ctx.restore();
+   ctx.transform(A,B,C,D,q[0][0]-A*a.x-C*a.y,q[0][1]-B*a.x-D*a.y);ctx.drawImage(image,0,0,...mesh.size);ctx.restore();
   }
  }
- const api={mesh,draw};root.SkyArt=api;if(typeof module!=='undefined')module.exports=api;
+ function visible(mesh,b,width,height,fov){
+  const focal=width/(2*Math.tan(fov*Math.PI/360)),viewRadius=Math.atan(Math.hypot(width/2,height/2)/focal);
+  const dot=mesh.center.v.reduce((n,x,i)=>n+x*b.f[i],0);
+  return dot>=Math.cos(Math.min(Math.PI,viewRadius+mesh.radius));
+ }
+ const api={mesh,draw,visible};root.SkyArt=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

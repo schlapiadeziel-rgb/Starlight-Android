@@ -48,6 +48,18 @@ jobs:
           } >> "$GITHUB_ENV"
       - name: Build signed release APK
         run: gradle --no-daemon :app:assembleRelease
+      - name: Verify bundled constellation artwork
+        run: |
+          python3 - <<'PYART'
+          import json, pathlib, zipfile
+          data=json.loads(pathlib.Path('app/src/main/assets/art-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
+          with zipfile.ZipFile('app/build/outputs/apk/release/app-release.apk') as apk:
+              assert len(data)==85
+              for item in data:
+                  name='assets/art/'+item['file'].split('/')[-1]
+                  assert len(apk.read(name))>0, name
+          print('All 85 constellation images are bundled in APK')
+          PYART
       - name: Verify release signature
         run: |
           "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk > signing-verification.txt
@@ -61,8 +73,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.9-constellation-art.apk
-          sha256sum Starlight-0.3.9-constellation-art.apk > SHA256SUMS
-          if ! gh release view v0.3.9 >/dev/null 2>&1; then
-            gh release create v0.3.9 Starlight-0.3.9-constellation-art.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.9 Constellation artwork' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.10-expanded-art.apk
+          sha256sum Starlight-0.3.10-expanded-art.apk > SHA256SUMS
+          if ! gh release view v0.3.10 >/dev/null 2>&1; then
+            gh release create v0.3.10 Starlight-0.3.10-expanded-art.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.10 Expanded constellation artwork' --notes-file RELEASE_NOTES.md
           fi

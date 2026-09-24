@@ -71,4 +71,5 @@ run('selected.v=SkyMath.vec(0,0);dirty=true;render();');assert(w.document.getEle
 run('selected.alt=-5;dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('地平线下'));
 run("selected=byId.get('Moon');tracking=false;az=selected.az;alt=selected.alt;dirty=true;render();");assert.equal(run('selected.id'),'Moon');
 run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.nearest(width/2,height/2)===selected'));
+run('cfg.art=true;dirty=true;render()');assert(run('artwork.filter(a=>a.image).length<=12'));run('cfg.art=false;dirty=true;render()');assert.equal(run('artwork.filter(a=>a.image).length'),0);
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');

@@ -2,9 +2,9 @@ Illustrations by Johan Meuris. Free Art License 1.3.
 Original images distributed unchanged.
 Source: https://github.com/Stellarium/stellarium-skycultures/tree/master/western
 License: https://artlibre.org/licence/lal/en/
-Files: capricornus.webp, cygnus.webp, ursa-major.webp, leo.webp, orion.webp, scorpius.webp.
+Files: all 85 illustration entries listed in app/src/main/assets/art-data.js. Six original files are under assets/art; the remaining 79 are archived unchanged in app/artwork.zip and extracted by Gradle.
 Anchor metadata derived from western/index.json: Stellarium team, CC BY-SA (version unspecified upstream).
-Modifications to metadata: six selected entries, only image size, filename and HIP anchors retained.
+Modifications to metadata: 85 available illustration entries, only image size, filename and HIP anchors retained.
 Source description follows:
 
 # Western
