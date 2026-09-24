@@ -2,11 +2,11 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.8 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.9 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.8)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.9)
 
 ## 已实现
 
@@ -108,3 +108,7 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 ### v0.3.8 星图视觉
 
 默认深色增强星图，白天也展示恒星（不代表肉眼可见）。帮助页可开启昼夜大气模拟，AR 保持按真实太阳高度显示。增加常用视场星点密度、细化亮核和光晕，最高 3 倍像素比并限制画布为 600 万像素；缩小界面占用，默认收起坐标网格。尚未加入星座插画及真实高清天体纹理。
+
+### v0.3.9 星座插画
+
+新增摩羯、天鹅、大熊、狮子、猎户、天蝎六组插画，按 HIP 锚点投影到天球；默认开启，可在帮助中关闭，AR 中隐藏。插画作者 Johan Meuris，来源 Stellarium western skyculture，Free Art License；锚点数据 CC BY-SA。原图未经修改，完整来源与许可见 licenses/stellarium-art.txt 和 licenses/Free-Art-License-1.3.txt。其余星座暂无线描以外的插画。
