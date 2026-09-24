@@ -55,6 +55,7 @@ jobs:
           data=json.loads(pathlib.Path('app/src/main/assets/art-data.js').read_text().split('=',1)[1].strip().rstrip(';'))
           with zipfile.ZipFile('app/build/outputs/apk/release/app-release.apk') as apk:
               assert len(data)==85
+              assert len(apk.read('assets/textures/moon.jpg'))>100000
               for item in data:
                   name='assets/art/'+item['file'].split('/')[-1]
                   assert len(apk.read(name))>0, name
@@ -73,8 +74,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.10-expanded-art.apk
-          sha256sum Starlight-0.3.10-expanded-art.apk > SHA256SUMS
-          if ! gh release view v0.3.10 >/dev/null 2>&1; then
-            gh release create v0.3.10 Starlight-0.3.10-expanded-art.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.10 Expanded constellation artwork' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.11-moon-detail.apk
+          sha256sum Starlight-0.3.11-moon-detail.apk > SHA256SUMS
+          if ! gh release view v0.3.11 >/dev/null 2>&1; then
+            gh release create v0.3.11 Starlight-0.3.11-moon-detail.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.11 Moon surface detail' --notes-file RELEASE_NOTES.md
           fi

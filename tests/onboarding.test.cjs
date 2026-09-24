@@ -3,7 +3,7 @@ const root=path.resolve(__dirname,'../app/src/main/assets');
 const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://app.starlight.local/',runScripts:'outside-only'}),w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','backup.js','planner.js','art-data.js','art.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','app.js'])vm.runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 let tracked=0,located=0,stopped=0;
 w.NativeSky={setCoordinates(){},track(){tracked++},locate(){located++},stopLocation(){stopped++}};
 const run=s=>vm.runInContext(s,dom.getInternalVMContext()),clickText=t=>{const b=[...w.document.querySelectorAll('#sheetBody button')].find(x=>x.textContent===t);assert(b,t);b.click();};
