@@ -20,6 +20,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     private SkyCamera skyCamera;
     private UpdateManager updater;
     private WeatherManager weather;
+    private IssManager iss;
     private boolean cameraWanted=false, resumed=false;
     private String pendingExport;
     private final float[] screenMatrix=new float[9];
@@ -39,6 +40,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         locations=(LocationManager)getSystemService(LOCATION_SERVICE);
         updater=new UpdateManager(this,this::js);
         weather=new WeatherManager(this::js);
+        iss=new IssManager(this::js);
         web=new WebView(this);
         web.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         web.getSettings().setJavaScriptEnabled(true);
@@ -116,6 +118,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         @JavascriptInterface public void installUpdate(){runOnUiThread(()->updater.install());}
         @JavascriptInterface public boolean hasVerifiedUpdate(){return updater.hasVerifiedUpdate();}
         @JavascriptInterface public void fetchWeather(double lat,double lon){weather.fetch(lat,lon);}
+        @JavascriptInterface public void fetchIss(){iss.fetch();}
         @JavascriptInterface public void setCoordinates(double lat,double lon){
             if(Double.isNaN(lat)||Double.isNaN(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
             declination=new GeomagneticField((float)lat,(float)lon,0,System.currentTimeMillis()).getDeclination();

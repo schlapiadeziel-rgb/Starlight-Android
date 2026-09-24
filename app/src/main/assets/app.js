@@ -1,6 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id), A=Astronomy, M=SkyMath, V=SkyVisual, D=Math.PI/180;
 const canvas=$('sky'),ctx=canvas.getContext('2d',{alpha:true});
+let issSnapshot=null,issStatus=null,issLoading=false;
 // Five reusable halos: only bright stars draw a sprite; dim stars keep cheap crisp arcs.
 const starHalos=V.colors.map(color=>{const layer=document.createElement('canvas');layer.width=layer.height=72;const c=layer.getContext('2d'),g=c.createRadialGradient(36,36,1,36,36,35);g.addColorStop(0,color+'7a');g.addColorStop(.14,color+'42');g.addColorStop(.48,color+'13');g.addColorStop(1,color+'00');c.fillStyle=g;c.fillRect(0,0,72,72);return layer;});
 const dustHalo=document.createElement('canvas');dustHalo.width=dustHalo.height=96;
@@ -43,6 +44,7 @@ const descriptions={Sun:'太阳是距离地球最近的恒星。切勿用肉眼�
 function now(){return new Date(Date.now()+offset);}function observer(){return new A.Observer(cfg.lat,cfg.lon,0);}function save(){localStorage.setItem('config',JSON.stringify(cfg));}function toast(s){$('toast').textContent=s;$('toast').style.opacity=1;clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').style.opacity=0,3500);}function fmt(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false});}
 function sync(){document.body.classList.toggle('red',cfg.night);$('night').classList.toggle('active',cfg.night);$('place').textContent=cfg.place;$('mode').textContent=ar?'实景 AR · 实验功能':tracking?(!deviceView?'正在获取自动方向':sensorAccuracy<2?'手机指向识星 · 方向待校准':'手机指向识星'):'自由探索';$('ar').classList.toggle('active',ar||arPending);$('ar').disabled=arPending;$('calibrate').hidden=!tracking;document.body.classList.toggle('ar',ar);$('track').classList.toggle('active',tracking);$('clock').textContent=fmt(now());$('time').textContent=offset===0?'◷ 现在':'◷ '+fmt(now());if(window.NativeSky)NativeSky.setCoordinates(cfg.lat,cfg.lon);dirty=true;}
 function calculate(){
+ if(offset!==0&&selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;$('target').textContent='';}
  const t=now(),obs=observer(),rot=A.Rotation_EQJ_HOR(t,obs).rot;
  for(const s of stars){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
  for(const s of [...deepSky,...constellations]){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
@@ -104,6 +106,9 @@ function render(){
   ctx.font='10px system-ui';ctx.fillStyle='#9ad8d0';ctx.fillText(s.designation,q[0],q[1]+size+14);
   hit.push({s,x:q[0],y:q[1]});ctx.globalAlpha=1;
  }
+ if(issSnapshot&&offset===0&&Date.now()-issSnapshot.timestamp<12000&&issSnapshot.alt>=0){
+  const q=p(issSnapshot.v);if(q){ctx.strokeStyle='#95f1e7';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(q[0],q[1]-8);ctx.lineTo(q[0]+8,q[1]);ctx.lineTo(q[0],q[1]+8);ctx.lineTo(q[0]-8,q[1]);ctx.closePath();ctx.stroke();ctx.font='11px system-ui';ctx.fillStyle='#c9fff6';ctx.fillText('ISS 快照',q[0],q[1]+23);hit.push({s:issSnapshot,x:q[0],y:q[1]});}
+ }
  ctx.strokeStyle='#ffffff25';ctx.beginPath();ctx.moveTo(width/2-7,height/2);ctx.lineTo(width/2+7,height/2);ctx.moveTo(width/2,height/2-7);ctx.lineTo(width/2,height/2+7);ctx.stroke();
  const dirs=['北','东北','东','东南','南','西南','西','西北'];$('bearing').textContent=dirs[Math.round(viewAz/45)%8]+' · '+Math.round(viewAz)+'°';$('elevation').textContent='仰角 '+Math.round(viewAlt)+'° · 视场 '+Math.round(fov)+'° · '+(sunAlt>=0?'白天':sunAlt>=-18?'暮光':'夜间');
  const marker=$('guide');marker.hidden=true;
@@ -118,7 +123,7 @@ function render(){
  }else $('target').textContent='';
 }
 let lastDraw=0;function frame(t){if(!document.hidden&&t-lastDraw>=32){render();lastDraw=t;}requestAnimationFrame(frame);}requestAnimationFrame(frame);
-setInterval(()=>{if(!document.hidden&&Date.now()-lastCalc>30000)calculate();},1000);
+setInterval(()=>{if(issSnapshot&&Date.now()-issSnapshot.timestamp>=12000){issSnapshot=null;if(selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;}$('target').textContent='';dirty=true;}if(!document.hidden&&Date.now()-lastCalc>30000)calculate();},1000);
 function stopTrack(){if(ar||arPending)exitAR();tracking=false;roll=0;if(window.NativeSky)NativeSky.track(false);sync();}
 function nativeReady(){
  if(!window.NativeSky)return;
@@ -142,7 +147,7 @@ function nativeSensorAccuracy(value){sensorAccuracy=Number(value);if(tracking&&s
 function nativeUnavailable(){stopTrack();toast('此设备缺少方向传感器，可使用拖动模式');}
 function nativeLocation(lat,lon){if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;setPlace(lat,lon,'当前位置');if($('sheet').open&&$('sheetTitle').textContent==='首次设置观测位置')$('sheet').close();toast('已使用当前位置，星图和方向已更新');}
 function nativeLocationError(message){toast(message+'；也可点顶部位置手动填写经纬度');}
-function setPlace(lat,lon,name){cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
+function setPlace(lat,lon,name){issSnapshot=null;if(selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;}cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
 $('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('方向自动跟随手机背面；请先设置实际位置');};
 $('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('grid').onclick=()=>{showGrid=!showGrid;$('grid').classList.toggle('active',showGrid);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
 let pointers=new Map(),start=null,moved=false,lastDist=0;
@@ -153,14 +158,35 @@ function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefine
 function openSheet(title){$('sheetTitle').textContent=title;$('sheetBody').replaceChildren();if(!$('sheet').open)$('sheet').showModal();return $('sheetBody');}$('close').onclick=()=>$('sheet').close();
 function selection(s){selected=s;const box=$('selection');box.hidden=false;$('hint').hidden=true;box.replaceChildren();let d=el('div');d.append(el('b',s.name),el('small',s.type+' · '+(s.alt>=0?'地平线上方 ':'地平线下方 ')+Math.abs(s.alt).toFixed(1)+'°'));box.append(d,button('探索 →',()=>details(s)));dirty=true;}
 function focus(s){selection(s);if(!tracking){az=s.az;alt=Math.max(-85,Math.min(85,s.alt));fov=Math.min(fov,65);roll=0;}if($('sheet').open)$('sheet').close();if(s.alt<0)toast(s.constellation?'星座参考中心在地平线下；部分星可能仍可见':'此天体现在位于地平线下，实际天空不可见');dirty=true;}
-function details(s){const b=openSheet(s.name);b.append(el('div',s.en+' / '+s.type,'tag'));b.append(el('p',s.constellation?('星座缩写 '+s.abbr+'。指向的是连线参考中心，并非星座的官方边界或可观测性判断。'+(s.paths.length?'可在星图的星座连线开关中显示图案。':'此星座没有收录连线，可搜索和定位参考中心。')):s.deepSky?('梅西耶目录 '+s.designation+(s.ngc?' / NGC '+s.ngc:'')+'，'+s.type+'，位于 '+s.con+'。目录亮度是整个天体的总星等，不能直接用来判断肉眼可见性；部分目标需要双筒镜或望远镜。坐标为近似 J2000，不显示距离。'):descriptions[s.id]||('收录于 HYG 星表。所属星座：'+s.con+'。亮度以视星等表示，数值越小越明亮。星图已考虑岁差；恒星自行和大气折射未应用于恒星显示。'),'copy'));const m=el('div',undefined,'metrics');const values=s.constellation?[['参考中心方位角',s.az.toFixed(1)+'°'],['参考中心高度角',s.alt.toFixed(1)+'°'],['连线段数',String(s.paths.reduce((n,path)=>n+Math.max(0,path.length-1),0))]]:[['方位角',s.az.toFixed(1)+'°'],['高度角',s.alt.toFixed(1)+'°'],[s.deepSky?'目录总星等':'视星等',s.mag.toFixed(2)],['距离',s.deepSky?'未收录':s.color?(s.dist<.1?Math.round(s.dist*149597870.7).toLocaleString()+' km':s.dist.toFixed(2)+' AU'):(s.dist>=100000?'未知':(s.dist*3.26156).toFixed(1)+' 光年')]];for(const [name,val] of values){let d=el('div');d.append(el('small',name),el('b',val));m.append(d);}b.append(m);if(s.id==='Moon')b.append(el('p','月面照明比例 '+(s.phase*100).toFixed(1)+'%','copy'),button('月相日历',()=>showMoonCalendar(),'secondary'));
+function details(s){if(s.id==='ISS'){showIss();return;}const b=openSheet(s.name);b.append(el('div',s.en+' / '+s.type,'tag'));b.append(el('p',s.constellation?('星座缩写 '+s.abbr+'。指向的是连线参考中心，并非星座的官方边界或可观测性判断。'+(s.paths.length?'可在星图的星座连线开关中显示图案。':'此星座没有收录连线，可搜索和定位参考中心。')):s.deepSky?('梅西耶目录 '+s.designation+(s.ngc?' / NGC '+s.ngc:'')+'，'+s.type+'，位于 '+s.con+'。目录亮度是整个天体的总星等，不能直接用来判断肉眼可见性；部分目标需要双筒镜或望远镜。坐标为近似 J2000，不显示距离。'):descriptions[s.id]||('收录于 HYG 星表。所属星座：'+s.con+'。亮度以视星等表示，数值越小越明亮。星图已考虑岁差；恒星自行和大气折射未应用于恒星显示。'),'copy'));const m=el('div',undefined,'metrics');const values=s.constellation?[['参考中心方位角',s.az.toFixed(1)+'°'],['参考中心高度角',s.alt.toFixed(1)+'°'],['连线段数',String(s.paths.reduce((n,path)=>n+Math.max(0,path.length-1),0))]]:[['方位角',s.az.toFixed(1)+'°'],['高度角',s.alt.toFixed(1)+'°'],[s.deepSky?'目录总星等':'视星等',s.mag.toFixed(2)],['距离',s.deepSky?'未收录':s.color?(s.dist<.1?Math.round(s.dist*149597870.7).toLocaleString()+' km':s.dist.toFixed(2)+' AU'):(s.dist>=100000?'未知':(s.dist*3.26156).toFixed(1)+' 光年')]];for(const [name,val] of values){let d=el('div');d.append(el('small',name),el('b',val));m.append(d);}b.append(m);if(s.id==='Moon')b.append(el('p','月面照明比例 '+(s.phase*100).toFixed(1)+'%','copy'),button('月相日历',()=>showMoonCalendar(),'secondary'));
  if(s.color){let text=[];for(const [label,dir] of [['下次升起',1],['下次落下',-1]]){try{let t=A.SearchRiseSet(s.en,observer(),dir,now(),2);text.push(label+'：'+(t?fmt(t.date):'48 小时内无此事件'));}catch(e){text.push(label+'：暂不可计算');}}b.append(el('p',text.join(' / '),'copy'));}
  b.append(button(tracking?'引导我找到它':'在星图中定位',()=>focus(s),'primary'));const note=el('textarea');note.placeholder='记录你的观测、想法或纪念…';note.value=notes[s.id]||'';note.maxLength=2000;b.append(el('label','观测笔记（保存在本机）'),note,button(Object.prototype.hasOwnProperty.call(notes,s.id)?'更新收藏与笔记':'收藏并保存笔记',()=>{notes[s.id]=note.value;localStorage.setItem('notes',JSON.stringify(notes));toast('已保存到观测收藏');},'secondary'));if(Object.prototype.hasOwnProperty.call(notes,s.id))b.append(button('取消收藏',()=>{delete notes[s.id];localStorage.setItem('notes',JSON.stringify(notes));details(s);},'secondary'));
 }
 function listObjects(parent,objects){if(!objects.length){parent.append(el('p','暂无匹配结果。可搜索星座、亮星中文名、英文名或 HIP 编号。','copy'));return;}for(const s of objects){let r=el('div',undefined,'row'),d=el('div');d.append(el('b',s.name),el('small',s.constellation?s.abbr+' · 星座 · 参考中心'+(s.alt>=0?'高度 ':'地平线下 ')+Math.abs(s.alt).toFixed(0)+'°':(s.deepSky?s.designation+' · '+s.type:s.color?s.type:s.con+' · 恒星')+' · '+s.mag.toFixed(1)+' 等 · '+(s.alt>=0?'高度 ':'地平线下 ')+Math.abs(s.alt).toFixed(0)+'°'));r.append(d,button('查看',()=>details(s)));parent.append(r);}}
 function listDeepSky(parent){parent.replaceChildren();parent.append(el('p','110 个梅西耶天体。目录亮度不能保证肉眼可见；请结合高度、天空亮度和观测设备判断。','copy'));listObjects(parent,deepSky);}
-$('search').onclick=()=>{const b=openSheet('探索天空'),input=el('input'),results=el('div');input.placeholder='星座 / English / HIP / M31 / NGC224';input.type='search';input.setAttribute('aria-label','搜索天体');b.append(input,button('浏览 88 星座',()=>{results.replaceChildren();listObjects(results,constellations);},'secondary'),button('浏览梅西耶 110',()=>listDeepSky(results),'secondary'),results);const search=()=>{const q=input.value.trim().toLowerCase();results.replaceChildren();let result=q?catalog.filter(s=>(s.name+' '+s.en+' '+(s.con||'')+' '+(s.constellation?s.abbr:s.deepSky?s.designation+' NGC'+s.ngc:'HIP '+s.hip)).toLowerCase().includes(q)):[...bodies,...deepSky.filter(s=>s.mag<=5).slice(0,10),...stars.slice(0,15)];listObjects(results,result.slice(0,60));if(result.length>60)results.append(el('p','显示前 60 项，请输入更完整的名称。','copy'));};input.oninput=search;search();};
+$('search').onclick=()=>{const b=openSheet('探索天空'),input=el('input'),results=el('div');input.placeholder='星座 / English / HIP / M31 / NGC224';input.type='search';input.setAttribute('aria-label','搜索天体');b.append(input,button('🛰 ISS 实时位置',showIss,'secondary'),button('浏览 88 星座',()=>{results.replaceChildren();listObjects(results,constellations);},'secondary'),button('浏览梅西耶 110',()=>listDeepSky(results),'secondary'),results);const search=()=>{const q=input.value.trim().toLowerCase();results.replaceChildren();let result=q?catalog.filter(s=>(s.name+' '+s.en+' '+(s.con||'')+' '+(s.constellation?s.abbr:s.deepSky?s.designation+' NGC'+s.ngc:'HIP '+s.hip)).toLowerCase().includes(q)):[...bodies,...deepSky.filter(s=>s.mag<=5).slice(0,10),...stars.slice(0,15)];listObjects(results,result.slice(0,60));if(result.length>60)results.append(el('p','显示前 60 项，请输入更完整的名称。','copy'));};input.oninput=search;search();};
 function showVisible(){calculate();const b=openSheet('此刻可见');b.append(button('查看未来 24 小时计划',showPlanner,'secondary'),el('p',cfg.place+' · '+fmt(now())+'。以下天体位于地平线上方；实际可见性受太阳、云层与光污染影响。','copy'));if(bodies[0].alt> -6)b.append(el('p','当前天空较亮，大多数恒星肉眼不可见。切勿直视太阳。','copy'));listObjects(b,catalog.filter(s=>s.alt>5&&!s.deepSky&&!s.constellation&&(s.color||s.mag<2)).sort((a,b)=>a.mag-b.mag).slice(0,45));if(bodies[0].alt< -6){b.append(el('h3','位置较高的深空目标'),el('p','部分需要望远镜；目录总星等不能代表肉眼可见。','copy'));listObjects(b,deepSky.filter(s=>s.alt>20&&s.mag<=6.5).sort((a,b)=>a.mag-b.mag).slice(0,15));}}
+function issSheetVisible(){return $('sheet').open&&$('sheetTitle').textContent==='国际空间站 · 实时位置'&&issStatus&&issStatus.isConnected;}
+function requestIss(){if(issLoading||!issSheetVisible()||!window.NativeSky||!NativeSky.fetchIss)return;issLoading=true;issStatus.textContent='正在获取空间站位置…';NativeSky.fetchIss();}
+function showIss(){
+ const b=openSheet('国际空间站 · 实时位置');issStatus=el('div',undefined,'copy');
+ b.append(el('p','按需从 Where the ISS at? 获取国际空间站最新位置。换算成你所在位置的方位与仰角在手机内完成，不向该服务发送观测坐标。空间站移动很快，星图只显示短时位置快照，不能据此预测过境、肉眼可见性或安全对准。','copy'),el('p','观测位置：'+cfg.place+'（'+cfg.lat.toFixed(2)+'°, '+cfg.lon.toFixed(2)+'°）','copy'),issStatus);
+ if(cfg.place.includes('示例')){issStatus.textContent='请先设置实际观测位置。';b.append(button('设置位置',()=>$('loc').click(),'primary'));return;}
+ if(!window.NativeSky||!NativeSky.fetchIss){issStatus.textContent='实时 ISS 位置需在安卓 App 中获取。';return;}
+ b.append(button('刷新当前位置',requestIss,'secondary'));requestIss();
+}
+function nativeIssResult(text){
+ issLoading=false;if(!issSheetVisible())return;
+ try{
+  const d=JSON.parse(text),age=Date.now()-d.timestamp;if(!Number.isFinite(d.timestamp)||age< -10000||age>10000)throw Error('stale');
+  const q=SkyISS.look(cfg.lat,cfg.lon,d.latitude,d.longitude,d.altitude);
+  issSnapshot={id:'ISS',name:'国际空间站',en:'ISS',type:'空间站',timestamp:d.timestamp,az:q.az,alt:q.alt,v:M.vec(q.az,q.alt)};if(selected&&selected.id==='ISS')selected=issSnapshot;dirty=true;
+  issStatus.replaceChildren(el('p','数据时间 '+new Date(d.timestamp).toLocaleString()+' · 来源：Where the ISS at? · 仅该时刻位置快照','copy'),el('p','你的天空：方位 '+q.az.toFixed(1)+'° · 仰角 '+q.alt.toFixed(1)+'° · 距离 '+q.range.toFixed(0)+' km'+(q.alt<0?' · 当前在地平线下':''),'copy'),el('p','空间站地面投影：纬度 '+d.latitude.toFixed(2)+'° · 经度 '+d.longitude.toFixed(2)+'° · 轨道高度 '+d.altitude.toFixed(0)+' km','copy'));
+  if(q.alt>=0)issStatus.append(button('在星图定位此刻快照',()=>{if(!issSnapshot||Date.now()-issSnapshot.timestamp>=12000){nativeIssError('位置快照已过期，请刷新');return;}offset=0;calculate();focus(issSnapshot);},'primary'));
+ }catch(e){nativeIssError('空间站数据无效或已过期，请刷新');}
+}
+function nativeIssError(message){issLoading=false;issSnapshot=null;if(selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;}dirty=true;if(issSheetVisible())issStatus.textContent=message;}
+setInterval(()=>{if(!document.hidden&&issSheetVisible()&&!issLoading)requestIss();},8000);
 let weatherStatus=null;
 const WEATHER_CACHE_KEY='weatherForecastV1',WEATHER_CACHE_MAX_AGE=3*3600000;
 let weatherRequestCoords=null;
@@ -190,7 +216,7 @@ function nativeWeatherResult(text){
 function nativeWeatherError(message){if(!weatherSheetVisible())return;const previous=cachedWeather();if(previous)renderWeather(previous,true);else weatherStatus.textContent=message;weatherRequestCoords=null;}
 function showPlanner(){
  const start=now(),plan=SkyPlanner.build(A,cfg.lat,cfg.lon,start),b=openSheet('未来 24 小时观测计划');
- b.append(button('联网查看云量和降水',showWeather,'secondary'),button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
+ b.append(button('🛰 ISS 实时位置',showIss,'secondary'),button('联网查看云量和降水',showWeather,'secondary'),button('查看此刻可见天体',showVisible,'secondary'),button('月相日历',()=>showMoonCalendar(),'secondary'),el('p',cfg.place+' · '+fmt(start)+' 起。时间均为手机本地时区；实际可见性还受云层、光污染和遮挡影响。','copy'));
  if(cfg.place.includes('示例'))b.append(el('p','当前使用示例位置，请先点顶部位置按钮设置实际经纬度。','copy'));
  const spans=xs=>xs.map(x=>fmt(new Date(x.start))+' — '+fmt(new Date(x.end))).join(' / ');
  b.append(el('h3','暗夜时段'),el('p',plan.dark.length?spans(plan.dark):'未来 24 小时没有太阳低于 −18° 的暗夜时段。','copy'),el('p','暗夜仅按太阳高度判断，不代表无月光。当前月面照明比例 '+(plan.moonFraction*100).toFixed(0)+'%。','copy'));

@@ -6,7 +6,7 @@ const w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','visual.js','backup.js','planner.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','visual.js','backup.js','planner.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
 click('search');let search=body().querySelector('input');search.value='天狼星';search.dispatchEvent(new w.Event('input'));assert(text().includes('天狼星'));clickText('查看');assert(text().includes('光年'));body().querySelector('textarea').value='测试笔记';clickText('收藏并保存笔记');click('saved');assert(text().includes('天狼星'));
@@ -22,7 +22,7 @@ assert(w.document.getElementById('grid').classList.contains('active'));click('gr
 require('node:vm').runInContext('render(); nativeLocation(0,0); tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0); render(); nativeUnavailable();',dom.getInternalVMContext());
 assert.equal(w.document.getElementById('mode').textContent,'自由探索');
 click('ar');assert(w.document.getElementById('toast').textContent.includes('新版安卓'));
-let camera=false,exported=null,checks=0,downloads=0,installs=0,weatherCoords=null;w.NativeSky={setCoordinates(){},track(){},camera(v){camera=v;},exportNotes(s){exported=s;},importNotes(){},checkUpdate(){checks++},downloadUpdate(){downloads++},installUpdate(){installs++},hasVerifiedUpdate(){return false},fetchWeather(lat,lon){weatherCoords=[lat,lon]}};
+let camera=false,exported=null,checks=0,downloads=0,installs=0,weatherCoords=null,issFetches=0;w.NativeSky={setCoordinates(){},track(){},camera(v){camera=v;},exportNotes(s){exported=s;},importNotes(){},checkUpdate(){checks++},downloadUpdate(){downloads++},installUpdate(){installs++},hasVerifiedUpdate(){return false},fetchWeather(lat,lon){weatherCoords=[lat,lon]},fetchIss(){issFetches++}};
 click('later');click('ar');clickText('开启相机 AR');assert(camera);
 const run=s=>require('node:vm').runInContext(s,dom.getInternalVMContext());
 run('nativeCameraReady(48);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
@@ -34,6 +34,12 @@ assert.equal(w.document.getElementById('sky').width,760);assert.equal(w.document
 assert.equal(run('selected.id'),'conOri');assert.equal(run('fov'),62);
 click('calibrate');let range=body().querySelector('input');range.value='1.2';range.dispatchEvent(new w.Event('input'));assert.equal(JSON.parse(w.localStorage.getItem('calibration')).scale,1.2);
 run("nativeCameraStopped('相机不可用');");assert(!w.document.body.classList.contains('ar'));assert(!camera);
+click('search');clickText('🛰 ISS 实时位置');assert.equal(issFetches,1);
+run('nativeIssResult(JSON.stringify({latitude:cfg.lat,longitude:cfg.lon,altitude:410,velocity:27500,timestamp:Date.now()}))');assert(text().includes('仰角 90.0°'));clickText('在星图定位此刻快照');assert.equal(run('selected.id'),'ISS');
+run('offset=3600000;calculate()');assert.equal(run('selected'),null);run('offset=0');
+run("nativeIssError('连接失败')");assert.equal(run('issSnapshot'),null);assert.equal(run('selected'),null);
+click('search');clickText('🛰 ISS 实时位置');run('nativeIssResult(JSON.stringify({latitude:cfg.lat,longitude:cfg.lon,altitude:410,velocity:27500,timestamp:Date.now()-30000}))');assert(text().includes('过期'));assert.equal(run('issSnapshot'),null);
+run('nativeIssResult(JSON.stringify({latitude:cfg.lat,longitude:cfg.lon,altitude:410,timestamp:Date.now()}));issSnapshot.timestamp-=13000');clickText('在星图定位此刻快照');assert(text().includes('已过期'));assert.equal(run('selected'),null);
 run('tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0);nativeSensorAccuracy(0);');assert(w.document.getElementById('mode').textContent.includes('方向待校准'));assert(!w.document.getElementById('calibrate').hidden);
 run('fov=85; calibration.az=180; calibration.alt=30;nativePose([1,0,0,0,0,-1,0,1,0],0);render();');
 assert.equal(run('az'),0);assert(Math.abs(run('alt'))<1e-9);assert.equal(run('fov'),85);
