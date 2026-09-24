@@ -61,8 +61,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.7-steady-pose.apk
-          sha256sum Starlight-0.3.7-steady-pose.apk > SHA256SUMS
-          if ! gh release view v0.3.7 >/dev/null 2>&1; then
-            gh release create v0.3.7 Starlight-0.3.7-steady-pose.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.7 Adaptive pose smoothing' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.8-enhanced-sky.apk
+          sha256sum Starlight-0.3.8-enhanced-sky.apk > SHA256SUMS
+          if ! gh release view v0.3.8 >/dev/null 2>&1; then
+            gh release create v0.3.8 Starlight-0.3.8-enhanced-sky.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.8 Enhanced sky visuals' --notes-file RELEASE_NOTES.md
           fi

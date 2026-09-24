@@ -15,3 +15,20 @@ body.ar{background:transparent}body.ar canvas{background:transparent}.tools butt
 }
 #help.update-available{position:relative;border-color:#97e4ca;color:#d5fff1}
 #help.update-available::after{content:'';position:absolute;right:1px;top:1px;width:7px;height:7px;background:#61ddac;border-radius:50%}
+
+/* Compact viewing chrome: retain touch targets, reduce opaque panels. */
+:root{--panel:#111b2bd9;--muted:#b0bfd1;--accent:#c2e5f5}
+header{top:12px;left:16px;right:16px}.brand b{font-size:17px;letter-spacing:3px}.brand small{display:none}.logo{font-size:29px}.brand{gap:7px}
+#context{top:61px;left:17px;font-size:10px}#heading{top:87px;left:17px}#target{top:135px;left:17px}
+.tools{right:10px;top:155px;gap:3px;background:#09111b88;border:1px solid #ffffff12;border-radius:24px;padding:4px}
+.tools button{background:transparent;border-color:transparent;width:40px;height:40px;font-size:20px}.tools .active{background:#263d526e;border-color:#a4baff35}
+footer{left:36px;right:36px;bottom:10px;max-width:420px}
+nav{border-radius:28px;padding:2px;background:#1b2b3dd9}nav button{padding:6px 4px;min-height:48px;font-size:9px;gap:2px}nav button span{font-size:22px;line-height:23px}
+.timebar{margin:6px auto}.timebar button{min-height:34px;padding:0 13px;font-size:11px}
+#hint{bottom:114px;color:#c1d1df;text-shadow:0 1px 5px #000}
+#heading,#context,#target{text-shadow:0 1px 6px #000}
+@media (orientation:landscape) and (max-height:600px){
+ header{top:6px}#context{top:47px}#heading{top:69px}#target{top:111px}
+ .tools{top:54px;right:8px;grid-template-columns:repeat(2,40px)}
+ footer{left:12px;right:auto;bottom:6px;width:min(50vw,340px)}#hint{bottom:12px;left:55%;right:103px}
+}
