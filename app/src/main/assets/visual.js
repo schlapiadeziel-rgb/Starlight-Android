@@ -17,5 +17,17 @@
  function visibility(mag,sunAlt){const daylight=clamp((sunAlt+16)/22),limit=7-11*daylight;return clamp((limit-mag+.8)/1.8);}
  const colors=['#b6d7ff','#dce9ff','#f7f5ec','#ffd9b2','#ffab8d'];
  function colorIndex(ci){if(!Number.isFinite(ci))return 2;return ci<.05?0:ci<.5?1:ci<1?2:ci<1.5?3:4;}
- const api={palette,visibility,colors,colorIndex};root.SkyVisual=api;if(typeof module!=='undefined')module.exports=api;
+ // Illustrative dust profile in galactic coordinates. Longitude wraps at 360°;
+ // a curved, dark seam splits the luminous band without moving catalog stars.
+ function galacticGlow(l,b){
+  if(!Number.isFinite(l)||!Number.isFinite(b))return 0;
+  const longitude=((l%360)+360)%360,rad=longitude*Math.PI/180;
+  const center=Math.exp(-.5*(Math.min(longitude,360-longitude)/38)**2);
+  const width=6+7*center+2*Math.sin(2*rad)**2;
+  const cloud=Math.exp(-.5*(b/width)**2);
+  const lane=b-(.9*Math.sin(3*rad)+.6*Math.sin(7*rad));
+  const split=1-.72*Math.exp(-.5*(lane/(1.15+center*.8))**2);
+  return clamp((.22+.78*center)*cloud*split);
+ }
+ const api={palette,visibility,colors,colorIndex,galacticGlow};root.SkyVisual=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

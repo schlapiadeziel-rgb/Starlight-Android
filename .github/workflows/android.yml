@@ -74,8 +74,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.12-textured-moon.apk
-          sha256sum Starlight-0.3.12-textured-moon.apk > SHA256SUMS
-          if ! gh release view v0.3.12 >/dev/null 2>&1; then
-            gh release create v0.3.12 Starlight-0.3.12-textured-moon.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.12 textured Moon in sky' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.13-galactic-dust.apk
+          sha256sum Starlight-0.3.13-galactic-dust.apk > SHA256SUMS
+          if ! gh release view v0.3.13 >/dev/null 2>&1; then
+            gh release create v0.3.13 Starlight-0.3.13-galactic-dust.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.13 galactic dust band' --notes-file RELEASE_NOTES.md
           fi

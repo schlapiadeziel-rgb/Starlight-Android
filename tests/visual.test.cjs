@@ -10,4 +10,11 @@ assert(V.visibility(0,-8)>V.visibility(5,-8));
 assert.notDeepEqual(V.palette(noon),V.palette(midnight));
 assert.deepEqual(V.palette(noon,true),V.palette(midnight,true));
 assert.equal(V.colorIndex(-.2),0);assert.equal(V.colorIndex(1.8),4);
-console.log('PASS: day/night Sun positions, twilight star fading, stable night palette and spectral colors.');
+// The illustrative Milky Way remains continuous at the galactic longitude seam,
+// broadens near the center and leaves an asymmetric dark lane through its core.
+assert(Math.abs(V.galacticGlow(0,8)-V.galacticGlow(360,8))<1e-12);
+assert(V.galacticGlow(0,8)>V.galacticGlow(180,8)*5);
+assert(V.galacticGlow(0,8)>V.galacticGlow(0,0)*2);
+assert(V.galacticGlow(0,8)>V.galacticGlow(0,40)*20);
+assert.equal(V.galacticGlow(NaN,0),0);
+console.log('PASS: day/night visibility, spectral colors and galactic background profile.');
