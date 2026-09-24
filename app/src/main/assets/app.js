@@ -11,7 +11,7 @@ try{cfg={...cfg,...JSON.parse(localStorage.getItem('config')||'{}')};notes=JSON.
 let ar=false,arPending=false,cameraFov=45,preArFov=85,preArTracking=false;
 let calibration={az:0,alt:0,scale:1};
 try{calibration={...calibration,...JSON.parse(localStorage.getItem('calibration')||'{}')};}catch(e){}
-let deviceView=null;
+let deviceView=null;const poseFilter=SkyPose.create();
 let az=180,alt=40,roll=0,fov=85,offset=0,tracking=false,sensorAccuracy=3,accuracyWarned=false,showLines=true,showGrid=true,selected=null,width=0,height=0,lastCalc=0,dirty=true,hit=M.hitGrid(),toastTimer;
 const chinese={Sirius:'天狼星',Canopus:'老人星',Arcturus:'大角星',Vega:'织女星',Capella:'五车二',Rigel:'参宿七',Procyon:'南河三',Betelgeuse:'参宿四',Altair:'牛郎星',Aldebaran:'毕宿五',Spica:'角宿一',Antares:'心宿二',Pollux:'北河三',Fomalhaut:'北落师门',Deneb:'天津四',Regulus:'轩辕十四',Polaris:'北极星',Castor:'北河二',Dubhe:'天枢',Merak:'天璇',Phecda:'天玑',Megrez:'天权',Alioth:'玉衡',Mizar:'开阳',Alkaid:'摇光',Alnitak:'参宿一',Alnilam:'参宿二',Mintaka:'参宿三',Bellatrix:'参宿五',Saiph:'参宿六',Schedar:'王良四',Caph:'王良一',Ruchbah:'阁道三',Segin:'阁道二',Acrux:'十字架二',Mimosa:'十字架三'};
 const stars=STAR_DATA.map(r=>{let ra=r[2]*15*D,d=r[3]*D;return {id:'s'+r[0],name:chinese[r[1]]||r[1],en:r[1],ra:r[2],dec:r[3],mag:r[4],con:r[5],ci:r[6],dist:r[7],hip:r[8],eq:[Math.cos(d)*Math.cos(ra),Math.cos(d)*Math.sin(ra),Math.sin(d)],v:[0,0,0],az:0,alt:0,type:'恒星'};});
@@ -140,9 +140,10 @@ function nativeReady(){
    button('稍后再设置',()=>{$('sheet').close();toast('当前仍是北京示例天空，不能用于当地识星');},'secondary'));
  }
 }
-function nativeTrackingStarted(){deviceView=null;sync();}
+function nativeTrackingStarted(){poseFilter.reset();deviceView=null;sync();}
 function nativePose(matrix,declination){
- if(!tracking)return;const view=M.deviceBasis(matrix,declination);if(!view)return;
+ if(!tracking)return;const raw=M.deviceBasis(matrix,declination);if(!raw)return;
+ if(!deviceView)poseFilter.reset();const view=poseFilter.update(raw,performance.now());if(!view)return;
  const firstPose=!deviceView;deviceView=view;az=(Math.atan2(view.f[0],view.f[1])/D+360)%360;alt=Math.asin(Math.max(-1,Math.min(1,view.f[2])))/D;roll=0;dirty=true;if(firstPose)sync();
 }
 function nativeSensorAccuracy(value){sensorAccuracy=Number(value);if(tracking&&sensorAccuracy<2&&!accuracyWarned){accuracyWarned=true;toast('方向精度较低：远离磁铁和金属，将手机缓慢画 8 字校准');}if(sensorAccuracy>=2)accuracyWarned=false;sync();}
