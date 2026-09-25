@@ -34,3 +34,17 @@ nav{border-radius:28px;padding:2px;background:#1b2b3dd9}nav button{padding:6px 4
 }
 
 canvas.moon-surface{width:min(100%,320px);height:auto;aspect-ratio:1;display:block;margin:20px auto;background:#020407;border-radius:50%;touch-action:auto}
+
+/* A reachable return button stays visible while the viewing controls are folded. */
+.tools #focusMode{font-size:12px;min-height:44px}
+.tools{max-height:calc(100vh - 270px);max-height:calc(100dvh - 270px);overflow-y:auto;scrollbar-width:none}
+.tools::-webkit-scrollbar{display:none}
+body.sky-focus header,body.sky-focus footer nav,body.sky-focus .timebar,body.sky-focus #hint,body.sky-focus #heading span{display:none}
+body.sky-focus .tools button:not(#focusMode){display:none}
+body.sky-focus .tools{top:max(12px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));display:flex;max-height:none;overflow:visible;padding:2px}
+body.sky-focus #heading{top:max(16px,env(safe-area-inset-top));left:16px}
+body.sky-focus #context{top:42px;left:16px;right:74px;flex-wrap:wrap;gap:5px;font-size:10px}
+body.sky-focus #target{top:76px;left:16px;max-width:75%}
+body.sky-focus footer{left:16px;right:16px;bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:420px}
+@media (max-height:650px) and (orientation:portrait){.tools{top:132px;max-height:calc(100vh - 255px);max-height:calc(100dvh - 255px)}}
+@media (orientation:landscape) and (max-height:600px){.tools{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px)}}

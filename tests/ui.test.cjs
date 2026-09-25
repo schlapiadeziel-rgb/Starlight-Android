@@ -6,7 +6,7 @@ const w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
 click('search');let search=body().querySelector('input');search.value='天狼星';search.dispatchEvent(new w.Event('input'));assert(text().includes('天狼星'));clickText('查看');assert(text().includes('光年'));body().querySelector('textarea').value='测试笔记';clickText('收藏并保存笔记');click('saved');assert(text().includes('天狼星'));
@@ -76,4 +76,13 @@ run("details(byId.get('Moon'))");clickText('查看月面细节');assert(body().q
 run("let moonDraws=0;Object.defineProperty(moonMap,'complete',{configurable:true,value:true});Object.defineProperty(moonMap,'naturalWidth',{configurable:true,value:2048});SkyMoonSurface.draw=()=>{moonDraws++};tracking=false;az=bodies[1].az;alt=bodies[1].alt;dirty=true;render();dirty=true;render()");
 assert.equal(run('moonDraws'),1,'sky-map Moon sprite should reuse a cached phase');
 run('bodies[1].phaseAngle+=4;dirty=true;render()');assert.equal(run('moonDraws'),2,'changed phase should redraw the sprite');
+// Folding the chrome must retain the target, time, field of view and tracking state.
+const viewingState=run('[selected.id,offset,fov,tracking].join("/")');
+click('focusMode');assert(w.document.body.classList.contains('sky-focus'));
+assert.equal(w.document.getElementById('focusMode').getAttribute('aria-pressed'),'true');
+assert.equal(w.document.getElementById('focusMode').textContent,'返回');
+run('render()');assert.equal(run('[selected.id,offset,fov,tracking].join("/")'),viewingState);
+click('focusMode');assert(!w.document.body.classList.contains('sky-focus'));
+assert.equal(w.document.getElementById('focusMode').getAttribute('aria-pressed'),'false');
+assert.equal(run('[selected.id,offset,fov,tracking].join("/")'),viewingState);
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');
