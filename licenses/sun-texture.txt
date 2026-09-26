@@ -1,11 +1,3 @@
-Moon texture: NASA's Scientific Visualization Studio, CGI Moon Kit (ID 4720).
-Visualizer: Ernie Wright (USRA). LROC WAC mosaic data: LRO camera team / Arizona State University.
-Source: https://svs.gsfc.nasa.gov/4720/
-Original image: https://svs.gsfc.nasa.gov/vis/a000000/a004700/a004720/lroc_color_2k.jpg
-Usage policy: https://svs.gsfc.nasa.gov/help/ (public domain unless otherwise noted).
-Original texture distributed unchanged. Runtime spherical projection and approximate phase shading by Starlight.
-The source texture is optimized for aesthetics, not scientific surface measurements.
-No NASA affiliation or endorsement.
 Sun texture by Solar System Scope / INOVE, licensed CC BY 4.0.
 Source: https://www.solarsystemscope.com/textures/
 License: https://creativecommons.org/licenses/by/4.0/

@@ -58,6 +58,8 @@ jobs:
               assert len(apk.read('assets/labels.js'))>100
               assert b'labels.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/textures/moon.jpg'))>100000
+              assert len(apk.read('assets/textures/sun.jpg'))>700000
+              assert b'Solar System Scope' in apk.read('assets/textures/CREDITS.txt')
               for item in data:
                   name='assets/art/'+item['file'].split('/')[-1]
                   assert len(apk.read(name))>0, name
@@ -76,8 +78,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.15-moon-explorer.apk
-          sha256sum Starlight-0.3.15-moon-explorer.apk > SHA256SUMS
-          if ! gh release view v0.3.15 >/dev/null 2>&1; then
-            gh release create v0.3.15 Starlight-0.3.15-moon-explorer.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.15 interactive Moon explorer' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.16-sun-explorer.apk
+          sha256sum Starlight-0.3.16-sun-explorer.apk > SHA256SUMS
+          if ! gh release view v0.3.16 >/dev/null 2>&1; then
+            gh release create v0.3.16 Starlight-0.3.16-sun-explorer.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.16 interactive Sun explorer' --notes-file RELEASE_NOTES.md
           fi

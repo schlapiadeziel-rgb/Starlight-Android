@@ -24,3 +24,10 @@ assert.equal(M.sample(0,0,0,{inspect:true}).light,1);
 assert.equal(M.sample(0,0,180,{yaw:180}).light,0);
 assert(M.sample(.8,.8,180,{zoom:2}));
 assert(Math.abs(M.sample(.4,.2,90,{yaw:360}).u-M.sample(.4,.2,90,{yaw:0}).u)<1e-12);
+
+// A self-luminous Sun must not inherit the Moon's new/full phase darkness.
+let sunPixels;
+const sunTarget={width:8,getContext(){return {createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},putImageData(out){sunPixels=out.data;}}}};
+M.draw(sunTarget,image,0,{emissive:true,glow:false});const darkPhase=Array.from(sunPixels);
+M.draw(sunTarget,image,180,{emissive:true,glow:false});assert.deepEqual(Array.from(sunPixels),darkPhase);
+assert(sunPixels[(4*8+4)*4]>150);

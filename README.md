@@ -2,13 +2,15 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.15 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.16 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.15)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.16)
 
 ## 已实现
+
+- 太阳详情新增可拖动旋转、1～4 倍缩放的球面纹理查看器，可关闭艺术光晕；主星图太阳图标也使用缓存纹理。纹理是静态艺术化资料，不代表实时太阳活动。
 
 - 月面细节支持拖动旋转、双指或按钮缩放（1～4 倍）、复位、月相与地形照明切换。使用全球月面纹理和球面投影，可查看背面；拖动时降低采样尺寸，停止后恢复 512 像素，纹理使用双线性采样。不是月球地形立体网格，未模拟天平动、月轴倾斜和地形投影阴影。
 
@@ -129,3 +131,5 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 ### v0.3.12 星图月面
 
 主星图的月盘也使用同一张月面纹理：按月相生成小尺寸贴图，亮面朝向屏幕上太阳的方向，月相变化时才重新绘制贴图。纹理在固定近地面示意上旋转，不计算天平动或月轴在天空中的精确角度；星图月盘仍为方便识别而放大的示意尺寸。图片读取失败时会回退到原来的月相圆盘。
+
+太阳纹理由 Solar System Scope / INOVE 提供，CC BY 4.0：https://www.solarsystemscope.com/textures/ ，许可 https://creativecommons.org/licenses/by/4.0/ 。2048×1024 原图未修改，运行时做球面投影、亮度和光晕绘制；来源与声明见 `licenses/sun-texture.txt` 及 APK 中的 `textures/CREDITS.txt`。
