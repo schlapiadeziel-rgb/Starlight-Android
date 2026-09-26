@@ -85,4 +85,17 @@ run('render()');assert.equal(run('[selected.id,offset,fov,tracking].join("/")'),
 click('focusMode');assert(!w.document.body.classList.contains('sky-focus'));
 assert.equal(w.document.getElementById('focusMode').getAttribute('aria-pressed'),'false');
 assert.equal(run('[selected.id,offset,fov,tracking].join("/")'),viewingState);
+// Exercise the actual moon viewer handlers with a decoded-image stand-in.
+const oldImage=w.Image,oldFrame=w.requestAnimationFrame,oldDraw=w.SkyMoonSurface.draw;let viewState=null,viewDraws=0;
+w.Image=class {set src(v){this.onload();}};w.requestAnimationFrame=fn=>{fn();return 1;};
+w.SkyMoonSurface.draw=(c,img,phase,view)=>{viewState={...view,size:c.width};viewDraws++;};
+run('showMoonSurface()');let surface=body().querySelector('canvas');assert.equal(viewState.zoom,1);
+clickText('＋');assert.equal(viewState.zoom,1.25);clickText('切换地形照明');assert.equal(viewState.inspect,true);
+surface.onpointerdown({pointerId:1,clientX:100,clientY:100,preventDefault(){}});
+surface.onpointermove({pointerId:1,clientX:140,clientY:120});assert(viewState.yaw>0);assert.equal(viewState.size,256);
+surface.onpointerup({pointerId:1});assert.equal(viewState.size,512);
+surface.onkeydown({key:'0',preventDefault(){}});assert.equal(viewState.zoom,1);assert.equal(viewState.yaw,0);assert.equal(viewState.pitch,0);
+clickText('恢复月相照明');assert.equal(viewState.inspect,false);
+click('close');const drawsAtClose=viewDraws;surface.onwheel({deltaY:-1,preventDefault(){}});assert.equal(viewDraws,drawsAtClose);
+w.Image=oldImage;w.requestAnimationFrame=oldFrame;w.SkyMoonSurface.draw=oldDraw;
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');

@@ -16,3 +16,11 @@ const target={width:8,getContext(){return {createImageData(w,h){return {data:new
 const image={width:2,height:2};M.draw(target,image,90);M.draw(target,image,270);
 assert.equal(reads,1,'source image must be sampled only once');
 console.log('PASS: lunar map coordinates and new/full/first/last-quarter illumination.');
+
+assert(Math.abs(M.sample(0,0,180,{yaw:90}).u-.75)<1e-10);
+assert(Math.abs(M.sample(0,0,180,{yaw:180}).u)<1e-10);
+assert(M.sample(0,0,180,{pitch:45}).v<.3);
+assert.equal(M.sample(0,0,0,{inspect:true}).light,1);
+assert.equal(M.sample(0,0,180,{yaw:180}).light,0);
+assert(M.sample(.8,.8,180,{zoom:2}));
+assert(Math.abs(M.sample(.4,.2,90,{yaw:360}).u-M.sample(.4,.2,90,{yaw:0}).u)<1e-12);

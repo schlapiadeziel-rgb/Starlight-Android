@@ -48,3 +48,7 @@ body.sky-focus #target{top:76px;left:16px;max-width:75%}
 body.sky-focus footer{left:16px;right:16px;bottom:max(12px,env(safe-area-inset-bottom));width:auto;max-width:420px}
 @media (max-height:650px) and (orientation:portrait){.tools{top:132px;max-height:calc(100vh - 255px);max-height:calc(100dvh - 255px)}}
 @media (orientation:landscape) and (max-height:600px){.tools{max-height:calc(100vh - 80px);max-height:calc(100dvh - 80px)}}
+
+canvas.moon-surface.interactive{width:min(100%,480px);border-radius:12px;touch-action:none;cursor:grab;outline-offset:3px}
+canvas.moon-surface.interactive:active{cursor:grabbing}
+.moon-controls{display:flex;justify-content:center;gap:10px}.moon-controls button{min-width:60px;border-radius:14px;padding:0 16px}
