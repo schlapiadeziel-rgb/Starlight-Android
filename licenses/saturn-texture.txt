@@ -1,0 +1,13 @@
+Saturn atmospheric texture by Solar System Scope / INOVE, licensed CC BY 4.0.
+Source: https://www.solarsystemscope.com/textures/
+License: https://creativecommons.org/licenses/by/4.0/
+Downloaded from the public Wikimedia Commons copy:
+https://commons.wikimedia.org/wiki/File:Solarsystemscope_texture_2k_saturn.jpg
+https://upload.wikimedia.org/wikipedia/commons/e/ea/Solarsystemscope_texture_2k_saturn.jpg
+
+The original 2048x1024 JPEG is distributed unchanged as assets/textures/saturn.jpg.
+Starlight applies spherical projection and illustrative illumination at runtime. The rings,
+their stripes and their tilt are drawn independently by Starlight code; they are not
+from the Saturn texture. Neither the texture nor the ring drawing is a live image,
+and the rings do not use a date-dependent viewing angle.
+No affiliation with or endorsement by Solar System Scope or INOVE.

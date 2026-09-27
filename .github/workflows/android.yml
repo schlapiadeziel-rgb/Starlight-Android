@@ -60,8 +60,11 @@ jobs:
               assert len(apk.read('assets/textures/moon.jpg'))>100000
               assert len(apk.read('assets/textures/sun.jpg'))>700000
               assert len(apk.read('assets/textures/jupiter.jpg'))>400000
+              assert len(apk.read('assets/textures/saturn.jpg'))>190000
+              assert b'saturn-surface.js' in apk.read('assets/index.html')
               assert b'Solar System Scope' in apk.read('assets/textures/CREDITS.txt')
               assert b'Jupiter atmospheric texture' in apk.read('assets/textures/CREDITS.txt')
+              assert b'Saturn atmospheric texture' in apk.read('assets/textures/CREDITS.txt')
               for item in data:
                   name='assets/art/'+item['file'].split('/')[-1]
                   assert len(apk.read(name))>0, name
@@ -80,8 +83,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.17-jupiter-explorer.apk
-          sha256sum Starlight-0.3.17-jupiter-explorer.apk > SHA256SUMS
-          if ! gh release view v0.3.17 >/dev/null 2>&1; then
-            gh release create v0.3.17 Starlight-0.3.17-jupiter-explorer.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.17 interactive Jupiter explorer' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.18-saturn-rings.apk
+          sha256sum Starlight-0.3.18-saturn-rings.apk > SHA256SUMS
+          if ! gh release view v0.3.18 >/dev/null 2>&1; then
+            gh release create v0.3.18 Starlight-0.3.18-saturn-rings.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.18 Saturn rings and texture' --notes-file RELEASE_NOTES.md
           fi
