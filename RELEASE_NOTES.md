@@ -1,8 +1,8 @@
-# 星野 Starlight 0.3.19 — M31 与 M42 观测图预览
+# 星野 Starlight 0.3.20 — 扩充深空观测图
 
-- 在暗色星图里为 M31、M42 的目录位置绘制边缘渐隐的观测图预览；搜索详情可以查看较大的打包图像。AR 相机画面、红色夜间模式、白昼大气和地平线以下不显示照片。
-- M31：NASA/JPL-Caltech GALEX 紫外合成图 PIA15416，https://science.nasa.gov/photojournal/andromeda/ 。M42：NASA/JPL-Caltech Spitzer 红外合成图 PIA13005，https://science.nasa.gov/photojournal/orions-dreamy-stars/ 。NASA 网站提供缩小分辨率 JPEG，APK 内附 `assets/deepsky/CREDITS.txt`，来源与使用说明见 `licenses/deep-sky-photos.txt`。
-- 星图预览是放大的波段合成照片，不代表肉眼颜色、真实视直径、天空朝向或当前天气；搜索与指向仍依照既有目录坐标。
-- 图像合成预览与界面测试通过；Android 真机画质及帧率尚未验证。固定发布签名，版本代码 31，可覆盖上一固定签名版。免费无广告。
+- 为 M8 礁湖星云和 M33 三角座星系增加边缘渐隐的星图预览与搜索详情图片，连同已有的 M31、M42 共四个目标。星图仅在目标位于地平线上、夜间、暗色非 AR 模式和适合的视场下显示预览。
+- 深空照片遵循目录亮度门槛；较暗天体须先选中才会显示预览，避免照片误导肉眼可见性。观测图像是放大的非可见光观测结果，不代表肉眼颜色、真实角直径、天空朝向或当前天气。
+- M8：NASA/JPL-Caltech Spitzer 红外图 PIA14728，https://science.nasa.gov/photojournal/into-the-depths-of-the-lagoon-nebula/ 。M33：NASA/JPL-Caltech GALEX 紫外图 PIA03033，https://science.nasa.gov/photojournal/anatomy-of-a-triangulum/ 。缩小的 JPEG 和署名打包在 APK 中，来源见 `licenses/deep-sky-photos.txt`。
+- 自动化测试和 APK 内容检查涵盖新增图片。固定发布签名，版本代码 32，可覆盖此前同一签名的版本。免费无广告；真机显示效果仍需设备验证。
 
-下载 Starlight-0.3.19-deep-sky-previews.apk。
+下载 Starlight-0.3.20-deep-sky-gallery.apk。

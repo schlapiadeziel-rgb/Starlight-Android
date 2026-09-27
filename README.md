@@ -2,15 +2,15 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.19 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.20 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.19)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.20)
 
 ## 已实现
 
-- M31 仙女座星系和 M42 猎户座大星云在暗色非 AR 星图中可显示柔和的 NASA/JPL-Caltech 观测图预览，搜索详情可查看大图。图像分别为 GALEX 紫外、Spitzer 红外波段合成，星图根据真实目录中心放置预览；预览图被放大，颜色、朝向与大小不能用来判断目视效果。照片与来源见 `licenses/deep-sky-photos.txt`，APK 内也附署名。
+- M31 仙女座星系、M33 三角座星系、M8 礁湖星云和 M42 猎户座大星云在暗色非 AR 星图中可显示柔和的 NASA/JPL-Caltech 观测图预览，搜索详情可查看大图。图像为 GALEX 紫外或 Spitzer 红外波段观测图，星图根据真实目录中心放置预览；预览图被放大，颜色、朝向与大小不能用来判断目视效果。照片与来源见 `licenses/deep-sky-photos.txt`，APK 内也附署名。
 - 土星在主星图显示带环图标；详情支持拖动查看带大气条纹的球面、1～4 倍缩放。光环在球体后方与前方分别绘制，含卡西尼缝示意。2048×1024 大气纹理由 Solar System Scope / INOVE 提供，CC BY 4.0，见 `licenses/saturn-texture.txt`。光环与开口角由程序艺术绘制，不代表当前真实观测朝向。
 - 木星详情新增可拖动旋转、1～4 倍缩放的静态大气球面纹理查看器；主星图也显示木星纹理图标。2048×1024 原图由 Solar System Scope / INOVE 提供，CC BY 4.0，详见 `licenses/jupiter-texture.txt` 与随 APK 打包的纹理署名。没有实时云层或当前大红斑位置。
 - 太阳详情新增可拖动旋转、1～4 倍缩放的球面纹理查看器，可关闭艺术光晕；主星图太阳图标也使用缓存纹理。纹理是静态艺术化资料，不代表实时太阳活动。

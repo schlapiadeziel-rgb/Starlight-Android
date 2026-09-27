@@ -65,7 +65,11 @@ jobs:
               assert b'deep-photo.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/deepsky/m31.jpg'))>100000
               assert len(apk.read('assets/deepsky/m42.jpg'))>100000
+              assert len(apk.read('assets/deepsky/m8.jpg'))>100000
+              assert len(apk.read('assets/deepsky/m33.jpg'))>100000
               assert b'NASA/JPL-Caltech' in apk.read('assets/deepsky/CREDITS.txt')
+              assert b'PIA14728' in apk.read('assets/deepsky/CREDITS.txt')
+              assert b'PIA03033' in apk.read('assets/deepsky/CREDITS.txt')
               assert b'Solar System Scope' in apk.read('assets/textures/CREDITS.txt')
               assert b'Jupiter atmospheric texture' in apk.read('assets/textures/CREDITS.txt')
               assert b'Saturn atmospheric texture' in apk.read('assets/textures/CREDITS.txt')
@@ -87,8 +91,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.19-deep-sky-previews.apk
-          sha256sum Starlight-0.3.19-deep-sky-previews.apk > SHA256SUMS
-          if ! gh release view v0.3.19 >/dev/null 2>&1; then
-            gh release create v0.3.19 Starlight-0.3.19-deep-sky-previews.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.19 M31 and M42 previews' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.20-deep-sky-gallery.apk
+          sha256sum Starlight-0.3.20-deep-sky-gallery.apk > SHA256SUMS
+          if ! gh release view v0.3.20 >/dev/null 2>&1; then
+            gh release create v0.3.20 Starlight-0.3.20-deep-sky-gallery.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.20 deep sky gallery' --notes-file RELEASE_NOTES.md
           fi

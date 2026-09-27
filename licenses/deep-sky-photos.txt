@@ -1,5 +1,5 @@
-Two NASA/JPL-Caltech telescope images are displayed as enlarged previews at the
-catalog coordinates of M31 and M42. These previews do not show the true naked-eye
+Four NASA/JPL-Caltech telescope images are displayed as enlarged previews at the
+catalog coordinates of M31, M33, M8 and M42. These previews do not show the true naked-eye
 appearance, angular size, image orientation, or current brightness.
 
 M31 — Andromeda, GALEX ultraviolet composite, PIA15416.
@@ -13,6 +13,18 @@ Credit: NASA/JPL-Caltech.
 Source: https://science.nasa.gov/photojournal/orions-dreamy-stars/
 NASA-served reduced-resolution JPEG in the APK:
 https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia13/pia13005/PIA13005.jpg?w=800&fit=clip
+
+M8 — Lagoon Nebula, Spitzer infrared composite, PIA14728.
+Credit: NASA/JPL-Caltech.
+Source: https://science.nasa.gov/photojournal/into-the-depths-of-the-lagoon-nebula/
+NASA-served reduced-resolution JPEG in the APK:
+https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia14/pia14728/PIA14728.jpg?w=960&fit=clip
+
+M33 — Triangulum Galaxy, GALEX ultraviolet image, PIA03033.
+Credit: NASA/JPL-Caltech.
+Source: https://science.nasa.gov/photojournal/anatomy-of-a-triangulum/
+NASA-served reduced-resolution JPEG in the APK:
+https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia03/pia03033/PIA03033.jpg?w=960&fit=clip
 
 NASA imagery use guidelines: https://www.nasa.gov/nasa-brand-center/images-and-media/
 Neither photograph bears a NASA logo. No endorsement by NASA or JPL is implied.
