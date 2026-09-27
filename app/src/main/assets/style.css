@@ -52,3 +52,4 @@ body.sky-focus footer{left:16px;right:16px;bottom:max(12px,env(safe-area-inset-b
 canvas.moon-surface.interactive{width:min(100%,480px);border-radius:12px;touch-action:none;cursor:grab;outline-offset:3px}
 canvas.moon-surface.interactive:active{cursor:grabbing}
 .moon-controls{display:flex;justify-content:center;gap:10px}.moon-controls button{min-width:60px;border-radius:14px;padding:0 16px}
+.deep-photo{display:block;width:100%;max-height:340px;object-fit:contain;margin:16px 0 8px;background:#04070d;border-radius:12px}

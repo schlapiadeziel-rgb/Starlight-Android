@@ -1,0 +1,15 @@
+const assert=require('node:assert/strict');
+const photo=require('../app/src/main/assets/deep-photo.js');
+let canvases=0,draws=0,masked=0;
+const ctx={drawImage(){draws++;},save(){},restore(){},translate(){},scale(){},fillRect(){masked++;},createRadialGradient(){return {addColorStop(){}}}};
+global.document={createElement(){canvases++;return {width:0,height:0,getContext:()=>ctx}}};
+const galaxy={naturalWidth:960,naturalHeight:715},nebula={naturalWidth:800,naturalHeight:1875};
+const a=photo.sprite(galaxy),b=photo.sprite(nebula);
+assert.equal(a.width,320);assert.equal(a.height,238);
+assert.equal(b.width,137);assert.equal(b.height,320);
+assert.equal(photo.sprite(galaxy),a,'repainting should reuse the softened source');
+assert.equal(canvases,2);assert.equal(draws,2);assert.equal(masked,2);
+assert.equal(photo.sprite({naturalWidth:0,naturalHeight:0}),null);
+assert(photo.size('M42',65)<photo.size('M31',65));
+assert(photo.size('M31',12)>photo.size('M31',85));
+console.log('PASS: deep-sky thumbnails retain aspect ratios, feather once and keep bounded preview size.');

@@ -1,0 +1,20 @@
+Two NASA/JPL-Caltech telescope images are displayed as enlarged previews at the
+catalog coordinates of M31 and M42. These previews do not show the true naked-eye
+appearance, angular size, image orientation, or current brightness.
+
+M31 — Andromeda, GALEX ultraviolet composite, PIA15416.
+Credit: NASA/JPL-Caltech.
+Source: https://science.nasa.gov/photojournal/andromeda/
+NASA-served reduced-resolution JPEG in the APK:
+https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia15/pia15416/PIA15416.jpg?w=960&fit=clip
+
+M42 — Orion's Dreamy Stars, Spitzer infrared composite, PIA13005.
+Credit: NASA/JPL-Caltech.
+Source: https://science.nasa.gov/photojournal/orions-dreamy-stars/
+NASA-served reduced-resolution JPEG in the APK:
+https://assets.science.nasa.gov/dynamicimage/assets/science/psd/photojournal/pia/pia13/pia13005/PIA13005.jpg?w=800&fit=clip
+
+NASA imagery use guidelines: https://www.nasa.gov/nasa-brand-center/images-and-media/
+Neither photograph bears a NASA logo. No endorsement by NASA or JPL is implied.
+The original JPEGs are kept unchanged in the APK. At runtime the app creates
+soft-edged, scaled overlays from them, retaining catalog coordinates for targets.
