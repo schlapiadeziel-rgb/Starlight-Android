@@ -2,13 +2,15 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.20 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.21 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.20)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.21)
 
 ## 已实现
+
+- 深色星图的银河增加程序生成的分层云气与暗带纹理，随银河坐标和视角移动、随缩放改变大小；仅在非 AR、非明亮天空下绘制。纹理是艺术化示意，恒星仍按星表坐标绘制。
 
 - M31 仙女座星系、M33 三角座星系、M8 礁湖星云和 M42 猎户座大星云在暗色非 AR 星图中可显示柔和的 NASA/JPL-Caltech 观测图预览，搜索详情可查看大图。图像为 GALEX 紫外或 Spitzer 红外波段观测图，星图根据真实目录中心放置预览；预览图被放大，颜色、朝向与大小不能用来判断目视效果。照片与来源见 `licenses/deep-sky-photos.txt`，APK 内也附署名。
 - 土星在主星图显示带环图标；详情支持拖动查看带大气条纹的球面、1～4 倍缩放。光环在球体后方与前方分别绘制，含卡西尼缝示意。2048×1024 大气纹理由 Solar System Scope / INOVE 提供，CC BY 4.0，见 `licenses/saturn-texture.txt`。光环与开口角由程序艺术绘制，不代表当前真实观测朝向。
