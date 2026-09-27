@@ -1,0 +1,11 @@
+Jupiter atmospheric texture by Solar System Scope / INOVE, licensed CC BY 4.0.
+Source: https://www.solarsystemscope.com/textures/
+License: https://creativecommons.org/licenses/by/4.0/
+Downloaded from the public Wikimedia Commons copy:
+https://commons.wikimedia.org/wiki/File:Solarsystemscope_texture_2k_jupiter.jpg
+https://upload.wikimedia.org/wikipedia/commons/b/be/Solarsystemscope_texture_2k_jupiter.jpg
+
+The original 2048x1024 JPEG is distributed unchanged as assets/textures/jupiter.jpg.
+Starlight applies spherical projection and illustrative observation lighting at runtime.
+The texture is a static illustration, not a live map of Jupiter's atmospheric features or storm longitude.
+No affiliation with or endorsement by Solar System Scope or INOVE.

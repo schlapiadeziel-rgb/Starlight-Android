@@ -103,5 +103,14 @@ assert(text().includes('非实时'));assert(text().includes('Solar System Scope'
 assert.equal(viewState.glow,true);clickText('隐藏光晕');assert.equal(viewState.glow,false);
 clickText('＋');assert.equal(viewState.zoom,1.25);clickText('复位');assert.equal(viewState.zoom,1);
 click('close');
+run("details(byId.get('Jupiter'))");clickText('查看木星大气');
+assert.equal(w.document.getElementById('sheetTitle').textContent,'木星大气');
+assert(text().includes('非实时'));assert(text().includes('Solar System Scope'));
+assert.equal(viewState.inspect,true);assert.equal(viewState.emissive,false);
+clickText('＋');assert.equal(viewState.zoom,1.25);
+let jovian=body().querySelector('canvas');jovian.onpointerdown({pointerId:1,clientX:120,clientY:100,preventDefault(){}});
+jovian.onpointermove({pointerId:1,clientX:160,clientY:100});assert(viewState.yaw>0);
+jovian.onpointerup({pointerId:1});assert.equal(viewState.size,512);
+click('close');
 w.Image=oldImage;w.requestAnimationFrame=oldFrame;w.SkyMoonSurface.draw=oldDraw;
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');
