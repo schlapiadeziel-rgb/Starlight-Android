@@ -2,13 +2,15 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.22 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.23 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.22)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.23)
 
 ## 已实现
+
+- M31、M33、M8、M42 的资料页新增独立观测图查看器：使用打包图片，支持 1～4 倍双指缩放、拖动、加减按钮、复位与横竖屏适配；放大不会增加图像原有分辨率，照片不代表肉眼颜色或实际角大小。
 
 - 亮星根据星色显示缓存光晕与轻微光芒；微弱星点略增绘制尺寸，便于手机屏幕辨认。光芒仅用于非 AR 普通星图，是视觉效果，不代表星体实际角大小。
 

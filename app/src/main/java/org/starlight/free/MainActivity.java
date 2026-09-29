@@ -54,7 +54,9 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
                     String path=r.getUrl().getPath();
                     if(path==null || path.contains("..")) return new WebResourceResponse("text/plain","UTF-8",null);
                     if(path.equals("/")) path="/index.html";
-                    String mime=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":"text/html";
+                    String mime=path.endsWith(".js")?"application/javascript":path.endsWith(".css")?"text/css":
+                        path.endsWith(".jpg")||path.endsWith(".jpeg")?"image/jpeg":path.endsWith(".webp")?"image/webp":
+                        path.endsWith(".png")?"image/png":path.endsWith(".txt")?"text/plain":"text/html";
                     try {return new WebResourceResponse(mime,"UTF-8",getAssets().open(path.substring(1)));}catch(Exception e){return new WebResourceResponse("text/plain","UTF-8",null);}
                 }
                 return new WebResourceResponse("text/plain","UTF-8",null);
