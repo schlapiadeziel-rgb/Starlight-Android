@@ -7,6 +7,32 @@
  function projector(b,w,h,fov,roll=0){const c=Math.cos(roll),s=Math.sin(roll),f=w/(2*Math.tan(fov*D/2));return v=>{const z=dot(v,b.f);if(z<=.03)return null;const x=dot(v,b.r),y=dot(v,b.u);return [w/2+(x*c-y*s)*f/z,h/2-(x*s+y*c)*f/z];};}
  function project(v,b,w,h,fov,roll=0){return projector(b,w,h,fov,roll)(v);}
  function delta(a,b){return ((a-b+540)%360)-180;}
+ // Inverse of the chart's perspective projection, including phone roll.
+ function unproject(x,y,b,w,h,fov,roll=0){
+  if(![x,y,w,h,fov,roll].every(Number.isFinite)||w<=0||h<=0||fov<=0||fov>=180)return null;
+  const focal=w/(2*Math.tan(fov*D/2)),sx=(x-w/2)/focal,sy=(h/2-y)/focal,c=Math.cos(roll),s=Math.sin(roll);
+  const rx=sx*c+sy*s,uy=sy*c-sx*s,v=b.f.map((n,i)=>n+rx*b.r[i]+uy*b.u[i]),length=Math.hypot(...v);
+  return v.map(n=>n/length);
+ }
+ function zoomFov(fov,scale){
+  if(!Number.isFinite(scale)||scale<=0)return fov;
+  // Scale focal length, rather than the angle itself, for consistent zoom.
+  return Math.max(12,Math.min(110,2*Math.atan(Math.tan(fov*D/2)/scale)/D));
+ }
+ function anchoredView(v,x,y,w,h,fov,az,alt){
+  const focal=w/(2*Math.tan(fov*D/2)),sx=(x-w/2)/focal,sy=(h/2-y)/focal,length=Math.hypot(sx,sy,1);
+  const rx=sx/length,uy=sy/length,fz=1/length,tilt=Math.atan2(uy,fz),latitude=Math.asin(Math.max(-1,Math.min(1,v[2]/Math.hypot(uy,fz))));
+  const old=basis(az,alt);let best=null;
+  // Two roll-free orientations may fit. Prefer continuity when both fit;
+  // near the poles use the closest feasible anchor within the altitude limit.
+  for(const pitch of [latitude-tilt,Math.PI-latitude-tilt]){
+   const nextAlt=Math.max(-85,Math.min(85,delta(pitch/D,0))),forward=fz*Math.cos(nextAlt*D)-uy*Math.sin(nextAlt*D);
+   const nextAz=((Math.atan2(v[0],v[1])-Math.atan2(rx,forward))/D+720)%360,b=basis(nextAz,nextAlt);
+   const error=1-dot(v,unproject(x,y,b,w,h,fov)),continuity=dot(old.f,b.f)+dot(old.r,b.r)+dot(old.u,b.u);
+   if(!best||error<best.error-1e-10||(Math.abs(error-best.error)<=1e-10&&continuity>best.continuity))best={az:nextAz,alt:nextAlt,error,continuity};
+  }
+  return {az:best.az,alt:best.alt};
+ }
  function deviceBasis(matrix,declination=0){
   if(!Array.isArray(matrix)||matrix.length!==9||!matrix.every(Number.isFinite)||!Number.isFinite(declination))return null;
   const a=declination*D,c=Math.cos(a),s=Math.sin(a);
@@ -65,5 +91,5 @@
    }
   };
  }
- const api={starIndex,hitGrid,vec,basis,project,projector,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
+ const api={starIndex,hitGrid,vec,basis,project,projector,unproject,zoomFov,anchoredView,delta,deviceBasis,targetGuide};root.SkyMath=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

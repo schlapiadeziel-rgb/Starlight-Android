@@ -140,4 +140,44 @@ run("tracking=false;az=byId.get('Saturn').az;alt=Math.max(-85,byId.get('Saturn')
 assert.equal(saturnDraws,afterViewer+1,'the main chart should reuse one cached ringed marker');
 w.SkySaturn.draw=oldSaturnDraw;
 w.Image=oldImage;w.requestAnimationFrame=oldFrame;w.SkyMoonSurface.draw=oldDraw;
+// Main-chart gestures use the same projection as the renderer and retain
+// selected targets after pinching, cancelling or lifting either finger first.
+const sky=w.document.getElementById('sky'),pointer=(pointerId,clientX,clientY)=>({pointerId,clientX,clientY,button:0});
+sky.setPointerCapture=()=>{};
+run('clearSkyPointers();tracking=false;ar=false;az=359;alt=15;roll=0;fov=85;selected=byId.get("Moon");hit.clear();hit.add(byId.get("Sun"),450,190);');
+run('var gestureRay=M.unproject(300,180,M.basis(az,alt),width,height,fov);');
+sky.onpointerdown(pointer(1,250,180));sky.onpointerdown(pointer(2,350,180));sky.onpointermove(pointer(2,450,180));
+let projected=run('M.project(gestureRay,M.basis(az,alt),width,height,fov)');
+assert(Math.abs(projected[0]-350)<1e-6);assert(Math.abs(projected[1]-180)<1e-6);assert(run('fov<85'));
+const pinchView=run('[az,alt,fov].join("/")');sky.onpointerup(pointer(1,250,180));
+sky.onpointermove(pointer(2,460,190));assert.notEqual(run('[az,alt,fov].join("/")'),pinchView);
+sky.onpointerup(pointer(2,460,190));assert.equal(run('selected.id'),'Moon','pinch must not pick another object');
+for(const first of [1,2]){
+ sky.onpointerdown(pointer(1,350,190));sky.onpointerdown(pointer(2,450,190));
+ sky.onpointerup(pointer(first,first===1?350:450,190));sky.onpointerup(pointer(first===1?2:1,first===1?450:350,190));
+ assert.equal(run('selected.id'),'Moon','even a stationary two-finger gesture is not a tap');
+}
+sky.onpointerdown(pointer(1,450,190));sky.onpointerup(pointer(1,450,190));assert.equal(run('selected.id'),'Sun','single tap still selects');
+sky.onpointerdown(pointer(1,450,190));sky.onpointercancel(pointer(1,450,190));sky.onpointerup(pointer(1,450,190));assert.equal(run('selected.id'),'Sun');assert.equal(run('pointers.size'),0);
+sky.onpointerdown(pointer(1,100,100));sky.onlostpointercapture({pointerId:1});assert.equal(run('pointers.size'),0);
+sky.onpointerdown(pointer(1,100,100));w.dispatchEvent(new w.Event('blur'));assert.equal(run('pointers.size'),0);
+sky.onpointerdown(pointer(1,100,100));w.dispatchEvent(new w.Event('resize'));assert.equal(run('pointers.size'),0);
+// Third fingers are ignored until exactly one or two pointers remain.
+sky.onpointerdown(pointer(1,100,100));sky.onpointerdown(pointer(2,200,100));sky.onpointerdown(pointer(3,300,100));
+const threeView=run('[az,alt,fov].join("/")');sky.onpointermove(pointer(3,400,200));assert.equal(run('[az,alt,fov].join("/")'),threeView);
+sky.onpointerup(pointer(3,400,200));sky.onpointermove(pointer(2,220,100));assert.notEqual(run('[az,alt,fov].join("/")'),threeView);
+sky.onpointerup(pointer(2,220,100));sky.onpointerup(pointer(1,100,100));assert.equal(run('selected.id'),'Sun');
+// A free-map wheel zoom anchors the cursor; a tracking zoom keeps direction.
+run('tracking=false;az=359;alt=15;fov=85;gestureRay=M.unproject(430,180,M.basis(az,alt),width,height,fov);');
+sky.onwheel({clientX:430,clientY:180,deltaY:-1,preventDefault(){}});
+projected=run('M.project(gestureRay,M.basis(az,alt),width,height,fov)');assert(Math.abs(projected[0]-430)<1e-6);assert(Math.abs(projected[1]-180)<1e-6);
+run('tracking=true;');const direction=run('[az,alt].join("/")');sky.onwheel({clientX:430,clientY:180,deltaY:-1,preventDefault(){}});assert.equal(run('[az,alt].join("/")'),direction);assert.equal(run('tracking'),true);
+click('zoomIn');assert.equal(run('tracking'),true);assert.equal(run('[az,alt].join("/")'),direction);
+// Sensor-mode taps retain tracking; deliberate drag enters free exploration.
+sky.onpointerdown(pointer(1,450,190));sky.onpointerup(pointer(1,450,190));assert.equal(run('tracking'),true);
+sky.onpointerdown(pointer(1,100,100));sky.onpointermove(pointer(1,130,120));sky.onpointerup(pointer(1,130,120));assert.equal(run('tracking'),false);
+// Camera AR must retain its measured field of view through map gestures.
+run('ar=true;tracking=true;fov=48;');const arView=run('[az,alt,fov,tracking].join("/")');
+sky.onpointerdown(pointer(1,100,100));sky.onpointerdown(pointer(2,200,100));sky.onpointermove(pointer(2,240,130));sky.onpointerup(pointer(1,100,100));sky.onpointerup(pointer(2,240,130));
+sky.onwheel({clientX:430,clientY:180,deltaY:-1,preventDefault(){}});click('zoomIn');assert.equal(run('[az,alt,fov,tracking].join("/")'),arView);run('ar=false;tracking=false;');
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');

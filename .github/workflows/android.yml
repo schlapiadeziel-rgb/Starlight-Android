@@ -65,6 +65,8 @@ jobs:
               assert b'deep-photo.js' in apk.read('assets/index.html')
               assert b'photo-view.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/photo-view.js'))>1000
+              assert b'anchoredView' in apk.read('assets/core.js')
+              assert b'cancelSkyPointer' in apk.read('assets/app.js')
               assert b'milky-way.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/milky-way.js'))>1000
               assert len(apk.read('assets/deepsky/m31.jpg'))>100000
@@ -95,8 +97,8 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.23-photo-viewer.apk
-          sha256sum Starlight-0.3.23-photo-viewer.apk > SHA256SUMS
-          if ! gh release view v0.3.23 >/dev/null 2>&1; then
-            gh release create v0.3.23 Starlight-0.3.23-photo-viewer.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.23 interactive deep sky photos' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.24-sky-gestures.apk
+          sha256sum Starlight-0.3.24-sky-gestures.apk > SHA256SUMS
+          if ! gh release view v0.3.24 >/dev/null 2>&1; then
+            gh release create v0.3.24 Starlight-0.3.24-sky-gestures.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.24 anchored sky gestures' --notes-file RELEASE_NOTES.md
           fi

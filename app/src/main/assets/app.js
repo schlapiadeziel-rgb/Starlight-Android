@@ -271,11 +271,43 @@ function nativeLocation(lat,lon){if(!Number.isFinite(lat)||!Number.isFinite(lon)
 function nativeLocationError(message){toast(message+'；也可点顶部位置手动填写经纬度');}
 function setPlace(lat,lon,name){issSnapshot=null;if(selected&&selected.id==='ISS'){selected=null;$('selection').hidden=true;}cfg.lat=lat;cfg.lon=lon;cfg.place=name;save();calculate();}
 $('track').onclick=()=>{if(ar||arPending){exitAR();return;}if(tracking){stopTrack();return;}if(!window.NativeSky){toast('手机指向模式需在安卓 App 中使用');return;}tracking=true;sync();NativeSky.track(true);toast('方向自动跟随手机背面；请先设置实际位置');};
-$('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('grid').onclick=()=>{showGrid=!showGrid;$('grid').classList.toggle('active',showGrid);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=Math.max(12,fov/1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=Math.min(110,fov*1.25);dirty=true;};
-let pointers=new Map(),start=null,moved=false,lastDist=0;
-canvas.onpointerdown=e=>{canvas.setPointerCapture(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);start=[e.clientX,e.clientY];moved=false;if(pointers.size===2){let ps=[...pointers.values()];lastDist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);}};
-canvas.onpointermove=e=>{if(!pointers.has(e.pointerId))return;const old=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(Math.hypot(e.clientX-start[0],e.clientY-start[1])>7)moved=true;if(!moved)return;if(ar)return;if(tracking)stopTrack();if(pointers.size===2){let ps=[...pointers.values()],dist=Math.hypot(ps[0][0]-ps[1][0],ps[0][1]-ps[1][1]);if(lastDist>0&&dist>0)fov=Math.max(12,Math.min(110,fov*lastDist/dist));lastDist=dist;}else{az=(az-(e.clientX-old[0])*fov/width+360)%360;alt=Math.max(-85,Math.min(85,alt+(e.clientY-old[1])*fov/width));}dirty=true;};
-canvas.onpointerup=e=>{if(!moved&&pointers.size===1){const nearest=hit.nearest(e.clientX,e.clientY);if(nearest)selection(nearest);else{selected=null;$('selection').hidden=true;$('hint').hidden=false;invalidateHud();}}pointers.delete(e.pointerId);};canvas.onpointercancel=e=>pointers.delete(e.pointerId);canvas.onwheel=e=>{e.preventDefault();if(ar)return;fov=Math.max(12,Math.min(110,fov*(e.deltaY>0?1.1:.9)));dirty=true;};
+$('lines').onclick=()=>{showLines=!showLines;$('lines').classList.toggle('active',showLines);dirty=true;};$('grid').onclick=()=>{showGrid=!showGrid;$('grid').classList.toggle('active',showGrid);dirty=true;};$('night').onclick=()=>{cfg.night=!cfg.night;save();sync();};$('zoomIn').onclick=()=>{if(ar)return;fov=M.zoomFov(fov,1.25);dirty=true;};$('zoomOut').onclick=()=>{if(ar)return;fov=M.zoomFov(fov,1/1.25);dirty=true;};
+const pointers=new Map();let moved=false,multiTouch=false;
+function skyPoint(e){const box=canvas.getBoundingClientRect();return [e.clientX-box.left,e.clientY-box.top];}
+function pinchFrame(){const ps=[...pointers.values()];return ps.length===2?{x:(ps[0].x+ps[1].x)/2,y:(ps[0].y+ps[1].y)/2,distance:Math.hypot(ps[0].x-ps[1].x,ps[0].y-ps[1].y)}:null;}
+function moveSky(from,to,scale=1){
+ const b=tracking&&deviceView?deviceView:M.basis(az,alt),v=M.unproject(from.x,from.y,b,width,height,fov,tracking?0:roll);if(!v)return;
+ if(tracking)stopTrack();roll=0;fov=M.zoomFov(fov,scale);
+ const next=M.anchoredView(v,to.x,to.y,width,height,fov,az,alt);az=next.az;alt=next.alt;dirty=true;
+}
+function clearSkyPointers(){pointers.clear();moved=false;multiTouch=false;}
+canvas.onpointerdown=e=>{
+ if(e.button!==undefined&&e.button!==0)return;
+ if(!pointers.size){moved=false;multiTouch=false;}else multiTouch=true;
+ const [x,y]=skyPoint(e);pointers.set(e.pointerId,{x,y,startX:x,startY:y});if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
+};
+canvas.onpointermove=e=>{
+ const old=pointers.get(e.pointerId);if(!old)return;
+ const before=pinchFrame(),[x,y]=skyPoint(e);pointers.set(e.pointerId,{...old,x,y});
+ if(Math.hypot(x-old.startX,y-old.startY)>7)moved=true;
+ if(!moved||ar||pointers.size>2)return;
+ if(pointers.size===2){const after=pinchFrame();if(before.distance>0&&after.distance>0)moveSky(before,after,after.distance/before.distance);}
+ else moveSky(old,{x,y});
+};
+canvas.onpointerup=e=>{
+ const p=pointers.get(e.pointerId);if(!p)return;const [x,y]=skyPoint(e);
+ const tap=!moved&&!multiTouch&&pointers.size===1&&Math.hypot(x-p.startX,y-p.startY)<=7;pointers.delete(e.pointerId);
+ if(tap){const nearest=hit.nearest(x,y);if(nearest)selection(nearest);else{selected=null;$('selection').hidden=true;$('hint').hidden=false;invalidateHud();}}
+ if(!pointers.size)clearSkyPointers();
+};
+function cancelSkyPointer(e){if(!pointers.has(e.pointerId))return;moved=true;pointers.delete(e.pointerId);if(!pointers.size)clearSkyPointers();}
+canvas.onpointercancel=cancelSkyPointer;canvas.onlostpointercapture=cancelSkyPointer;
+window.addEventListener('blur',clearSkyPointers);window.addEventListener('resize',clearSkyPointers);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)clearSkyPointers();});
+canvas.onwheel=e=>{
+ e.preventDefault();if(ar||!e.deltaY)return;const scale=e.deltaY>0?1/1.1:1.1;
+ if(tracking){fov=M.zoomFov(fov,scale);dirty=true;}else{const [x,y]=skyPoint(e);moveSky({x,y},{x,y},scale);}
+};
 function el(tag,text,cls){const x=document.createElement(tag);if(text!==undefined)x.textContent=text;if(cls)x.className=cls;return x;}function button(text,fn,cls){const b=el('button',text,cls);b.onclick=fn;return b;}
 let sheetCleanup=null;
 function cleanupSheet(){if(sheetCleanup){const dispose=sheetCleanup;sheetCleanup=null;dispose();}}
@@ -439,7 +471,7 @@ function maybeCheckUpdate(){
 }
 function showUpdate(){
  const b=openSheet('应用更新');updateStatus=el('div',undefined,'copy');
- b.append(el('div','STARLIGHT 0.3.23 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
+ b.append(el('div','STARLIGHT 0.3.24 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
  if(!window.NativeSky||!NativeSky.checkUpdate){updateStatus.textContent='请在安卓 App 内使用检查更新。';return;}
  if(NativeSky.hasVerifiedUpdate&&NativeSky.hasVerifiedUpdate())b.append(button('安装已下载并验证的版本',()=>NativeSky.installUpdate(),'secondary'));
  b.append(button('检查新版本',()=>{manualUpdate=true;updateStatus.replaceChildren(el('p','正在连接 GitHub 检查版本…','copy'));NativeSky.checkUpdate();},'primary'));
@@ -454,7 +486,7 @@ function nativeUpdateProgress(value){if(updateSheetVisible())updateStatus.textCo
 function nativeUpdateReady(version){if(!updateSheetVisible()){toast('新版 '+version+' 已下载并验证，打开 ? → 检查更新后安装');return;}updateStatus.replaceChildren(el('p','已验证 '+version+'。安装时 Android 会请求你确认；若首次安装此来源，请按提示授权后返回点击安装。','copy'),button('打开系统安装界面',()=>NativeSky.installUpdate(),'primary'));}
 function nativeUpdatePermission(){if(updateSheetVisible())updateStatus.prepend(el('p','请在系统页面允许此来源安装应用，返回后再次点击“打开系统安装界面”。','copy'));}
 function nativeUpdateError(message){if(updateSheetVisible())updateStatus.textContent=message;else if(manualUpdate)toast(message);}
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.23 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();dirty=true;$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();dirty=true;$('help').click();},'secondary'));for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放。点击右侧准星，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理和放大示意尺寸，不用于精确月面定位；银河云气和暗带是程序生成的艺术化示意；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.24 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();dirty=true;$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();dirty=true;$('help').click();},'secondary'));for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放时目标会随手势中心移动；拖动或双指操作会进入自由探索。点击右侧准星可恢复手机自动跟随，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理和放大示意尺寸，不用于精确月面定位；银河云气和暗带是程序生成的艺术化示意；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}
