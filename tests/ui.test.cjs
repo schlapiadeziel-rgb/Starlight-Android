@@ -180,4 +180,16 @@ sky.onpointerdown(pointer(1,100,100));sky.onpointermove(pointer(1,130,120));sky.
 run('ar=true;tracking=true;fov=48;');const arView=run('[az,alt,fov,tracking].join("/")');
 sky.onpointerdown(pointer(1,100,100));sky.onpointerdown(pointer(2,200,100));sky.onpointermove(pointer(2,240,130));sky.onpointerup(pointer(1,100,100));sky.onpointerup(pointer(2,240,130));
 sky.onwheel({clientX:430,clientY:180,deltaY:-1,preventDefault(){}});click('zoomIn');assert.equal(run('[az,alt,fov,tracking].join("/")'),arView);run('ar=false;tracking=false;');
+// Density is taken from the actual chart buffer, including its pixel budget.
+const originalPhotoSprite=w.SkyDeepPhoto.sprite,originalArtDraw=w.SkyArt.draw,originalArtRelease=w.SkyArt.release;
+let requestedPixels=[],artRatios=[],artReleases=0;
+w.SkyDeepPhoto.sprite=(image,need)=>{requestedPixels.push(need);return {width:image.naturalWidth,height:image.naturalHeight};};
+Object.defineProperty(w,'devicePixelRatio',{configurable:true,value:3});w.dispatchEvent(new w.Event('resize'));
+run('deepPhotoImages.set("M31",{complete:true,naturalWidth:960,naturalHeight:715});deepPhotoImages.set("M42",{complete:true,naturalWidth:800,naturalHeight:1875});deepPhoto("M31",170);deepPhoto("M42",100);');
+assert.equal(requestedPixels[0],510);assert.equal(requestedPixels[1],703.125,'tall photos need density for the longer axis');
+w.SkyArt.draw=(...args)=>{artRatios.push(args[6]);};w.SkyArt.release=()=>{artReleases++;originalArtRelease();};
+run('for(const a of artwork)a.image={complete:true,naturalWidth:512};cfg.art=true;dirty=true;render();');
+assert(artRatios.length>0);assert(artRatios.every(r=>r===run('canvas.width/width')));
+run('cfg.art=false;dirty=true;render();');assert(artReleases>0,'hiding art releases its extra buffer');
+w.SkyDeepPhoto.sprite=originalPhotoSprite;w.SkyArt.draw=originalArtDraw;w.SkyArt.release=originalArtRelease;
 dom.window.close();console.log('PASS: search, details, persistent notes, coordinate validation, time, night mode, visible list, renderer and missing-sensor fallback.');
