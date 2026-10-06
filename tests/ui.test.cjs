@@ -31,6 +31,7 @@ click('track');assert(w.document.getElementById('toast').textContent.includes('�
 assert(!w.document.getElementById('grid').classList.contains('active'));click('grid');assert(w.document.getElementById('grid').classList.contains('active'));click('grid');assert(!w.document.getElementById('grid').classList.contains('active'));
 click('help');clickText('开启真实昼夜大气');assert.equal(JSON.parse(w.localStorage.getItem('config')).atmosphere,true);clickText('关闭昼夜大气 · 展示完整星图');assert.equal(JSON.parse(w.localStorage.getItem('config')).atmosphere,false);
 clickText('隐藏银河摄影');assert.equal(JSON.parse(w.localStorage.getItem('config')).galaxy,false);clickText('显示银河摄影');assert.equal(JSON.parse(w.localStorage.getItem('config')).galaxy,true);assert(text().includes('ESO/S. Brunier'));
+const artStrength=body().querySelector('#artStrength');assert(artStrength);artStrength.value='45';artStrength.dispatchEvent(new w.Event('input'));artStrength.dispatchEvent(new w.Event('change'));assert.equal(JSON.parse(w.localStorage.getItem('config')).artStrength,.45);assert(text().includes('插画亮度 · 45%'));clickText('隐藏星座插画');assert(body().querySelector('#artStrength').disabled);clickText('显示星座插画');assert(!body().querySelector('#artStrength').disabled);
 // Validate Canvas execution and sensor callbacks in the same application scope.
 require('node:vm').runInContext('render(); nativeLocation(0,0); tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0); render(); nativeUnavailable();',dom.getInternalVMContext());
 assert.equal(w.document.getElementById('mode').textContent,'自由探索');

@@ -1,25 +1,28 @@
-# Starlight 0.3.27 source verification — 2026-10-06
+# Starlight 0.3.28 source verification — 2026-10-06
 
-Implemented: adaptive J2000 equatorial grid, clipped screen paths,
-readable tangent-aligned RA/declination ticks, alternative positions on
-the same curve, shared label exclusion, and cached bounded geometry.
+Implemented: density/magnification-aware illustration strength, selected
+constellation emphasis, persisted strength control, reuse of projected
+mesh points, cancellation/release and memoized image failure.
 
 Passed:
-- All 21 Node test scripts via `npm test`, including existing catalog,
-  image, projection, sensor-filter, gesture, layout and UI tests.
-- 5,112 independent grid-vector comparisons against Astronomy Engine's
-  `RotateVector`, at three observers and two dates. Zoom/polar density,
-  clipped paths, upright tangent angles, same-view reuse and a limit of
-  fewer than 9,000 geometry samples are checked.
-- Tick placement checks preserve higher-priority target labels, avoid HUD
-  regions and stay within viewport bounds in both orientations.
-- Real Chromium 154/SwiftShader browser review: 390×844 portrait at 55°,
-  844×390 landscape at 20°, polar view at 85°, roll and red night mode.
-  No page errors. In the fixed Capricorn-centered portrait comparison,
-  visible coordinate ticks increased from 2 to 14; both RA and declination
-  ticks were present. This is an example view, not a universal count.
-- Source syntax and whitespace checks. Release workflow checks that the
-  new grid renderer and original offline photograph are bundled in APK.
+- All 22 Node test scripts via `npm test`.
+- Artwork style checks cover magnification, physical density, selected
+  versus background art, red night mode, strength bounds and horizon hiding.
+- Actual Canvas raster comparison reduces the large white background wash
+  by more than half in the synthetic zoom case without changing the
+  foreground star pixel. The same projected points are reused during draw.
+- Existing checks retain all 85 source artworks and 255 HIP anchor alignments,
+  seam-free compositing, one shared bounded canvas and unavailable-canvas
+  fallback. Original artwork bytes and anchor metadata are unchanged.
+- Real Chromium 154/SwiftShader review in landscape at 20° and portrait at
+  65°, including selection, night mode, control persistence/zero strength,
+  native pause and AR resource release. No page errors.
+- The fixed landscape comparison's art strengths fell from a uniform 0.30
+  to about 0.046–0.095. Selecting Capricorn emphasized it at about 0.151
+  and dimmed its neighbors to about 0.014–0.028. These are example-view
+  render strengths, not device performance or physical brightness measures.
+- A deliberately missing Capricorn image was requested once across five
+  redraws while the chart and remaining artwork continued to work.
 
 The release workflow requires Android compilation, bundled-asset checks
 and verification against the fixed signing certificate before publishing.

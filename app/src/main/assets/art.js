@@ -23,9 +23,32 @@
   return q.map(p=>p.map((n,i)=>center[i]+(n-center[i])*scale));
  }
  function release(){if(surface){surface.width=surface.height=0;surface=null;}}
- function draw(ctx,image,mesh,project,width,height,pixelRatio=1){
+ function presentation(mesh,project,width,height,options={}){
+  const projected=mesh.points.map(p=>p.v[2]>=0?project(p.v):null),side=Math.round(Math.sqrt(mesh.points.length));
+  const density=Number.isFinite(options.density)&&options.density>0?options.density:1;
+  let magnification=0,left=Infinity,top=Infinity,right=-Infinity,bottom=-Infinity;
+  for(let i=0;i<projected.length;i++){
+   const q=projected[i];if(!q||!q.every(Number.isFinite))continue;
+   left=Math.min(left,q[0]);top=Math.min(top,q[1]);right=Math.max(right,q[0]);bottom=Math.max(bottom,q[1]);
+   if(q[0]<0||q[0]>width||q[1]<0||q[1]>height)continue;
+   for(const j of [i%side<side-1?i+1:-1,i+side<projected.length?i+side:-1]){
+    const next=projected[j];if(j<0||!next||!next.every(Number.isFinite))continue;
+    const pixels=Math.hypot(mesh.points[j].x-mesh.points[i].x,mesh.points[j].y-mesh.points[i].y);
+    if(pixels>0)magnification=Math.max(magnification,density*Math.hypot(next[0]-q[0],next[1]-q[1])/pixels);
+   }
+  }
+  // If a magnified image covers the screen between mesh samples, its full
+  // projected footprint still tells us the source is being stretched.
+  if(!magnification&&Number.isFinite(left))magnification=density*Math.max((right-left)/mesh.size[0],(bottom-top)/mesh.size[1]);
+  const strength=Number.isFinite(options.strength)?Math.max(0,Math.min(.6,options.strength)):.3;
+  const fade=1/(1+Math.max(0,magnification-1.25)*.65);
+  const emphasis=options.selected?1.15*Math.max(.4,fade):.72*Math.max(.08,fade)*(options.dimmed?.3:1);
+  const alpha=Number.isFinite(left)?Math.min(.65,strength*emphasis*(options.night?.45:1)):0;
+  return {alpha,magnification,projected};
+ }
+ function draw(ctx,image,mesh,project,width,height,pixelRatio=1,view=null){
   if(width<=0||height<=0)return;
-  const projected=mesh.points.map(p=>p.v[2]>=0?project(p.v):null);
+  const projected=view?view.projected:mesh.points.map(p=>p.v[2]>=0?project(p.v):null);
   const plan=[];let left=width,top=height,right=0,bottom=0;
   for(const ids of mesh.triangles){
    const [a,b,c]=ids.map(i=>mesh.points[i]),q=ids.map(i=>projected[i]);if(q.some(p=>!p))continue;
@@ -67,5 +90,5 @@
   const dot=mesh.center.v.reduce((n,x,i)=>n+x*b.f[i],0);
   return dot>=Math.cos(Math.min(Math.PI,viewRadius+mesh.radius));
  }
- const api={mesh,draw,visible,release};root.SkyArt=api;if(typeof module!=='undefined')module.exports=api;
+ const api={mesh,draw,visible,presentation,release};root.SkyArt=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);
