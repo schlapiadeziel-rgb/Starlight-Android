@@ -25,8 +25,10 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npm install --ignore-scripts
+      - run: npm ci --ignore-scripts
       - run: npm test
+      - name: Prepare verified offline Milky Way photograph
+        run: python3 tools/prepare_milky_way.py
       - name: Prepare fixed release signing key
         env:
           STARLIGHT_SIGNING_BUNDLE: ${{ secrets.STARLIGHT_SIGNING_BUNDLE }}
@@ -71,6 +73,12 @@ jobs:
               assert b'[320,640,1024]' in apk.read('assets/deep-photo.js')
               assert b'milky-way.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/milky-way.js'))>1000
+              assert b'galaxy.js' in apk.read('assets/index.html')
+              assert len(apk.read('assets/galaxy.js'))>4000
+              assert len(apk.read('assets/textures/milky-way.jpg'))==4857484
+              import hashlib
+              assert hashlib.sha256(apk.read('assets/textures/milky-way.jpg')).hexdigest()=='5363732a1629eed9df2f707b31eaae6b117c0ee35d7cc8d6ddd636bc6512302d'
+              assert b'ESO/S. Brunier' in apk.read('assets/textures/CREDITS.txt')
               assert len(apk.read('assets/deepsky/m31.jpg'))>100000
               assert len(apk.read('assets/deepsky/m42.jpg'))>100000
               assert len(apk.read('assets/deepsky/m8.jpg'))>100000
@@ -99,8 +107,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.25-retina-detail.apk
-          sha256sum Starlight-0.3.25-retina-detail.apk > SHA256SUMS
-          if ! gh release view v0.3.25 >/dev/null 2>&1; then
-            gh release create v0.3.25 Starlight-0.3.25-retina-detail.apk SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.25 sharper deep sky and seamless artwork' --notes-file RELEASE_NOTES.md
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.26-milky-way-photo.apk
+          python3 - <<'PYSOURCE'
+          import pathlib, subprocess, zipfile
+          names=[n.decode() for n in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if n]
+          names.append('app/src/main/assets/textures/milky-way.jpg')
+          with zipfile.ZipFile('Starlight-0.3.26-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+              for name in names:
+                  archive.write(name,'Starlight-0.3.26/'+name)
+          PYSOURCE
+          sha256sum Starlight-0.3.26-milky-way-photo.apk Starlight-0.3.26-source.zip > SHA256SUMS
+          if ! gh release view v0.3.26 >/dev/null 2>&1; then
+            gh release create v0.3.26 Starlight-0.3.26-milky-way-photo.apk Starlight-0.3.26-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.26 photographic Milky Way' --notes-file RELEASE_NOTES.md
           fi

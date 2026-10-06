@@ -2,13 +2,15 @@
 
 免费、无广告的中文观星 App；联网获取天气和国际空间站位置，星图按所设时间和地点生成。独立设计与实现，不隶属 iCandi Apps / Night Sky，不使用其代码、图标、品牌或美术素材。
 
-**状态：0.3.25 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
+**状态：0.3.26 开发预览版；尚未达到 Night Sky 全功能/性能等价。**
 
 ## 下载
 
-[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.25)
+[下载安卓 APK（发布页）](https://github.com/schlapiadeziel-rgb/Starlight-Android/releases/tag/v0.3.26)
 
 ## 已实现
+
+- 银河摄影背景：离线打包 ESO/S. Brunier 的 4000×2000 全天全景原图，按银河坐标、地点、时间和画面视角重新投影，显示真实的长曝光尘埃暗带细节。单次 WebGL 绘制并复用纹理，同一视角可复用已绘帧；背景缓冲限制一百五十万像素和 2 倍密度。仅在非 AR、非红色夜间模式的暗色星图中显示，地平线下不显示；可在帮助页关闭。GPU 不可用、纹理加载失败或上下文丢失时退回程序云气。进入 AR、关闭摄影或切到后台会释放该层资源。照片属于历史长曝光背景，不能用来预测肉眼亮度或点选照片中的星点；识星标记仍来自星表。许可与来源见 `licenses/milky-way-panorama.txt`。
 
 - 提升高分辨率屏幕上的深空图片预览：根据实际绘图密度和显示大小，从原图选择 320、640 或至多 1024 像素的预览，不超过来源图片分辨率；每张图仅保留一个可升级缓存。星座插画先在共用画布中拼接，再统一透明叠加，减少三角网格的暗缝和重叠亮线；沿用原有 HIP 锚点和图像。共用画布上限六百万像素，隐藏插画或进入 AR 时释放。
 
@@ -18,7 +20,7 @@
 
 - 亮星根据星色显示缓存光晕与轻微光芒；微弱星点略增绘制尺寸，便于手机屏幕辨认。光芒仅用于非 AR 普通星图，是视觉效果，不代表星体实际角大小。
 
-- 深色星图的银河增加程序生成的分层云气与暗带纹理，随银河坐标和视角移动、随缩放改变大小；仅在非 AR、非明亮天空下绘制。纹理是艺术化示意，恒星仍按星表坐标绘制。
+- 银河摄影关闭或不可用时，深色星图显示程序生成的分层云气与暗带纹理，随银河坐标和视角移动、随缩放改变大小；仅在非 AR、非明亮天空下绘制。纹理是艺术化示意，恒星仍按星表坐标绘制。
 
 - M31 仙女座星系、M33 三角座星系、M8 礁湖星云和 M42 猎户座大星云在暗色非 AR 星图中可显示柔和的 NASA/JPL-Caltech 观测图预览，搜索详情可查看大图。图像为 GALEX 紫外或 Spitzer 红外波段观测图，星图根据真实目录中心放置预览；预览图被放大，颜色、朝向与大小不能用来判断目视效果。照片与来源见 `licenses/deep-sky-photos.txt`，APK 内也附署名。
 - 土星在主星图显示带环图标；详情支持拖动查看带大气条纹的球面、1～4 倍缩放。光环在球体后方与前方分别绘制，含卡西尼缝示意。2048×1024 大气纹理由 Solar System Scope / INOVE 提供，CC BY 4.0，见 `licenses/saturn-texture.txt`。光环与开口角由程序艺术绘制，不代表当前真实观测朝向。
@@ -89,13 +91,16 @@ Android 8.0+，安装预览 APK。第一次打开先设置实际位置，App 自
 
 ## 构建
 
-Java 17、Gradle 8.9、Android SDK Platform 35、Build Tools 35。
+Java 17、Gradle 8.9、Android SDK Platform 35、Build Tools 35、Python 3.8+。
 
 ```sh
+python3 tools/prepare_milky_way.py
 gradle :app:assembleDebug
 npm install
 npm test
 ```
+
+银河摄影首次从 ESO 官方 CDN 获取，脚本检查固定文件大小和 SHA-256；已验证的本地图片不重复下载，Gradle 在图片缺失或摘要不符时拒绝构建。发布页的 `Starlight-0.3.26-source.zip` 已包含该图，可离线构建。APK 内打包摄影素材，运行时无需联网获取。
 
 不依赖第三方 Android UI 库。也可用 Android Studio 打开根目录并使用 Gradle 8.9。仓库未包含 Gradle wrapper 二进制，可用 `gradle wrapper --gradle-version 8.9` 生成。
 
@@ -105,7 +110,7 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 
 原生 Java Activity 提供传感器和定位桥接，本地 WebView Canvas 绘制星图。仅加载内置 https 本地映射资源；拦截其他请求与跳转。星图水平向量每 30 秒重算，交互重绘最多约 30 FPS，DPR 上限 3，总像素上限 600 万，按星等/视场裁剪。
 
-自动测试覆盖屏幕倾斜时的找星引导、边缘箭头计算、暗星选中、投影方向、背面剔除、方位角环绕、48 个不同位置/日期/天体的两条坐标转换路径，以及春分太阳高度的物理合理性。DOM 逻辑测试已覆盖搜索、笔记保存、经纬度校验、时间、夜间模式、列表和传感器缺失回退；Canvas 用桩替代，不代表实际视觉渲染通过。构建和 APK 签名已在 Linux 验证。
+自动测试覆盖屏幕倾斜时的找星引导、边缘箭头计算、暗星选中、投影方向、背面剔除、方位角环绕、48 个不同位置/日期/天体的两条坐标转换路径，以及春分太阳高度的物理合理性。DOM 逻辑测试已覆盖搜索、笔记保存、经纬度校验、时间、夜间模式、列表和传感器缺失回退；DOM 测试中的 Canvas 用桩替代。银河新增 800 组投影交叉验证；另在桌面 headless Chromium 的 SwiftShader 中检查了真实着色器像素、方位/滚转、地平遮罩、缓存、缓冲上限、上下文恢复与模式回退，不代表 Android 真机性能或画质验收。构建和 APK 签名已在 Linux 验证。
 
 **未完成：相机预览与标记对齐真机验收、相机占用/权限回退测试、真机启动、WebView 视觉验收、传感器朝向校准、权限完整矩阵、不同系统版本适配、FPS/耗电/内存基准。** 因此不声称已达到商用品质或与 Night Sky 同等性能。
 
@@ -146,3 +151,5 @@ GitHub Actions 在 main 提交时提供 APK artifact；首次构建成功时自�
 主星图的月盘也使用同一张月面纹理：按月相生成小尺寸贴图，亮面朝向屏幕上太阳的方向，月相变化时才重新绘制贴图。纹理在固定近地面示意上旋转，不计算天平动或月轴在天空中的精确角度；星图月盘仍为方便识别而放大的示意尺寸。图片读取失败时会回退到原来的月相圆盘。
 
 太阳纹理由 Solar System Scope / INOVE 提供，CC BY 4.0：https://www.solarsystemscope.com/textures/ ，许可 https://creativecommons.org/licenses/by/4.0/ 。2048×1024 原图未修改，运行时做球面投影、亮度和光晕绘制；来源与声明见 `licenses/sun-texture.txt` 及 APK 中的 `textures/CREDITS.txt`。
+
+银河摄影：ESO/S. Brunier，eso0932a，CC BY 4.0，https://www.eso.org/public/images/eso0932a/ 。打包的 4000×2000 原始 publication JPEG 未修改；运行时投影、调光和遮罩。

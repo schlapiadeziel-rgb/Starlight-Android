@@ -1,6 +1,7 @@
 'use strict';
 const $=id=>document.getElementById(id), A=Astronomy, M=SkyMath, V=SkyVisual, D=Math.PI/180;
 const canvas=$('sky'),ctx=canvas.getContext('2d',{alpha:true});
+const galaxyRenderer=SkyGalaxy.create(()=>{dirty=true;});
 const moonMap=new Image();let moonSprite=null,moonSpritePhase=-1;
 moonMap.onload=()=>{dirty=true;};moonMap.src='textures/moon.jpg';
 const sunMap=new Image();let sunSprite=null;sunMap.onload=()=>{dirty=true;};sunMap.src='textures/sun.jpg';
@@ -20,7 +21,7 @@ const dustHalo=document.createElement('canvas');dustHalo.width=dustHalo.height=9
 {const c=dustHalo.getContext('2d'),g=c.createRadialGradient(48,48,2,48,48,46);g.addColorStop(0,'#d6c6bb27');g.addColorStop(.55,'#b9a9ae13');g.addColorStop(1,'#a3a6c000');c.fillStyle=g;c.fillRect(0,0,96,96);}
 const warmDust=document.createElement('canvas');warmDust.width=warmDust.height=96;
 {const c=warmDust.getContext('2d'),g=c.createRadialGradient(48,48,2,48,48,46);g.addColorStop(0,'#f2c7a02f');g.addColorStop(.52,'#d3a4a014');g.addColorStop(1,'#a393c000');c.fillStyle=g;c.fillRect(0,0,96,96);}
-let cfg={lat:39.9042,lon:116.4074,place:'北京 · 示例位置',night:false,atmosphere:false,art:true},notes={};
+let cfg={lat:39.9042,lon:116.4074,place:'北京 · 示例位置',night:false,atmosphere:false,art:true,galaxy:true},notes={};
 try{cfg={...cfg,...JSON.parse(localStorage.getItem('config')||'{}')};notes=JSON.parse(localStorage.getItem('notes')||'{}');}catch(e){}
 let ar=false,arPending=false,cameraFov=45,preArFov=85,preArTracking=false;
 let calibration={az:0,alt:0,scale:1};
@@ -82,6 +83,7 @@ function deepPhoto(id,displayWidth){
 }
 const patterns=[{name:'北斗七星',paths:[[54061,53910,58001,59774,54061],[59774,62956,65378,67301]].map(path=>path.map(id=>byHip.get(id)||null))},...constellations.filter(s=>s.paths.length)];
 const fixedPoint=(x,y,z)=>({eq:[x,y,z],v:[0,0,0]});
+const galacticAxes=A.Rotation_GAL_EQJ().rot.map(row=>fixedPoint(...row));
 const eqPoint=(ra,dec)=>{const a=ra*15*D,d=dec*D;return fixedPoint(Math.cos(d)*Math.cos(a),Math.cos(d)*Math.sin(a),Math.sin(d));};
 const eqGrid=[];
 for(let h=0;h<24;h+=2){const line=[];for(let dec=-80;dec<=80;dec+=4)line.push(eqPoint(h,dec));eqGrid.push(line);}
@@ -106,7 +108,7 @@ function calculate(){
  starCells=M.starIndex(starsByMagnitude);
  for(const s of [...deepSky,...constellations]){const [x,y,z]=s.eq,n=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z,w=rot[0][1]*x+rot[1][1]*y+rot[2][1]*z,u=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;s.v[0]=-w;s.v[1]=n;s.v[2]=u;s.alt=Math.asin(Math.max(-1,Math.min(1,u)))/D;s.az=(Math.atan2(-w,n)/D+360)%360;}
  // Static art and coordinate paths follow exactly the same J2000-to-horizon rotation.
- for(const s of [...eqGrid.flat(),...hourLabels.map(x=>x.point),...galacticDust,...artwork.flatMap(a=>[a.mesh.center,...a.mesh.points])]){const [x,y,z]=s.eq;s.v[0]=-(rot[0][1]*x+rot[1][1]*y+rot[2][1]*z);s.v[1]=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z;s.v[2]=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;}
+ for(const s of [...eqGrid.flat(),...hourLabels.map(x=>x.point),...galacticDust,...galacticAxes,...artwork.flatMap(a=>[a.mesh.center,...a.mesh.points])]){const [x,y,z]=s.eq;s.v[0]=-(rot[0][1]*x+rot[1][1]*y+rot[2][1]*z);s.v[1]=rot[0][0]*x+rot[1][0]*y+rot[2][0]*z;s.v[2]=rot[0][2]*x+rot[1][2]*y+rot[2][2]*z;}
  for(const b of bodies){const eq=A.Equator(b.en,t,obs,true,true),h=A.Horizon(t,obs,eq.ra,eq.dec,'normal'),ill=A.Illumination(b.en,t);Object.assign(b,{ra:eq.ra,dec:eq.dec,dist:eq.dist,az:h.azimuth,alt:h.altitude,mag:ill.mag,v:M.vec(h.azimuth,h.altitude),phase:ill.phase_fraction});if(b.id==='Moon')b.phaseAngle=A.MoonPhase(t);}
  lastCalc=Date.now();dirty=true;sync();if(selected)selection(selected);
 }
@@ -124,7 +126,11 @@ function render(){
  const viewAz=az,viewAlt=alt;
  const basis=tracking&&deviceView?deviceView:M.basis(viewAz,viewAlt),p=M.projector(basis,width,height,fov,tracking?0:roll);
  if(!ar&&!cfg.night&&sunAlt>-18){const sun=p(bodies[0].v);if(sun&&sun[0]>-180&&sun[0]<width+180&&sun[1]>-180&&sun[1]<height+180){const glow=ctx.createRadialGradient(sun[0],sun[1],4,sun[0],sun[1],180);glow.addColorStop(0,'#ffcf9670');glow.addColorStop(.35,'#ffb37724');glow.addColorStop(1,'#ffb37700');ctx.fillStyle=glow;ctx.fillRect(sun[0]-180,sun[1]-180,360,360);}}
- if(!ar&&sunAlt<-9){const scale=Math.min(2.4,Math.max(.8,85/fov));for(const s of galacticDust){if(s.v[2]<0)continue;const q=p(s.v),size=s.haze?s.size*scale:s.size;if(!q||q[0]<-size||q[0]>width+size||q[1]<-size||q[1]>height+size)continue;ctx.globalAlpha=s.opacity*Math.min(1,(-sunAlt-9)/9);if(s.haze)ctx.drawImage(s.texture?SkyMilky.sprite(s.variant,s.warm):s.warm?warmDust:dustHalo,q[0]-size/2,q[1]-size/2,size,size);else{ctx.fillStyle=s.warm?'#e0c9ba':'#c5d4e5';ctx.fillRect(q[0],q[1],size,size);}}ctx.globalAlpha=1;}
+ let photographicGalaxy=false;
+ if(cfg.galaxy&&!ar&&!cfg.night&&sunAlt<-9){photographicGalaxy=galaxyRenderer.draw(ctx,basis,galacticAxes.map(a=>a.v),width,height,fov,canvas.width/width,tracking?0:roll,.82*Math.min(1,(-sunAlt-9)/9));}
+ else galaxyRenderer.release();
+ if($('galaxyCredit').hidden===photographicGalaxy){$('galaxyCredit').hidden=!photographicGalaxy;hudDirty=true;}
+ if(!photographicGalaxy&&!ar&&sunAlt<-9){const scale=Math.min(2.4,Math.max(.8,85/fov));for(const s of galacticDust){if(s.v[2]<0)continue;const q=p(s.v),size=s.haze?s.size*scale:s.size;if(!q||q[0]<-size||q[0]>width+size||q[1]<-size||q[1]>height+size)continue;ctx.globalAlpha=s.opacity*Math.min(1,(-sunAlt-9)/9);if(s.haze)ctx.drawImage(s.texture?SkyMilky.sprite(s.variant,s.warm):s.warm?warmDust:dustHalo,q[0]-size/2,q[1]-size/2,size,size);else{ctx.fillStyle=s.warm?'#e0c9ba':'#c5d4e5';ctx.fillRect(q[0],q[1],size,size);}}ctx.globalAlpha=1;}
  if(cfg.art&&!ar&&sunAlt<-9){
   const active=artwork.filter(a=>SkyArt.visible(a.mesh,basis,width,height,fov)).sort((a,b)=>b.mesh.center.v.reduce((n,x,i)=>n+x*basis.f[i],0)-a.mesh.center.v.reduce((n,x,i)=>n+x*basis.f[i],0)).slice(0,12),keep=new Set(active);
   for(const a of artwork)if(!keep.has(a))a.image=null;
@@ -473,7 +479,7 @@ function maybeCheckUpdate(){
 }
 function showUpdate(){
  const b=openSheet('应用更新');updateStatus=el('div',undefined,'copy');
- b.append(el('div','STARLIGHT 0.3.25 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
+ b.append(el('div','STARLIGHT 0.3.26 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
  if(!window.NativeSky||!NativeSky.checkUpdate){updateStatus.textContent='请在安卓 App 内使用检查更新。';return;}
  if(NativeSky.hasVerifiedUpdate&&NativeSky.hasVerifiedUpdate())b.append(button('安装已下载并验证的版本',()=>NativeSky.installUpdate(),'secondary'));
  b.append(button('检查新版本',()=>{manualUpdate=true;updateStatus.replaceChildren(el('p','正在连接 GitHub 检查版本…','copy'));NativeSky.checkUpdate();},'primary'));
@@ -488,7 +494,7 @@ function nativeUpdateProgress(value){if(updateSheetVisible())updateStatus.textCo
 function nativeUpdateReady(version){if(!updateSheetVisible()){toast('新版 '+version+' 已下载并验证，打开 ? → 检查更新后安装');return;}updateStatus.replaceChildren(el('p','已验证 '+version+'。安装时 Android 会请求你确认；若首次安装此来源，请按提示授权后返回点击安装。','copy'),button('打开系统安装界面',()=>NativeSky.installUpdate(),'primary'));}
 function nativeUpdatePermission(){if(updateSheetVisible())updateStatus.prepend(el('p','请在系统页面允许此来源安装应用，返回后再次点击“打开系统安装界面”。','copy'));}
 function nativeUpdateError(message){if(updateSheetVisible())updateStatus.textContent=message;else if(manualUpdate)toast(message);}
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.25 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();dirty=true;$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();dirty=true;$('help').click();},'secondary'));for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放时目标会随手势中心移动；拖动或双指操作会进入自由探索。点击右侧准星可恢复手机自动跟随，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理和放大示意尺寸，不用于精确月面定位；银河云气和暗带是程序生成的艺术化示意；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.26 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();dirty=true;$('help').click();},'secondary'),button(cfg.galaxy?'隐藏银河摄影':'显示银河摄影',()=>{cfg.galaxy=!cfg.galaxy;save();dirty=true;$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();dirty=true;$('help').click();},'secondary'));for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放时目标会随手势中心移动；拖动或双指操作会进入自由探索。点击右侧准星可恢复手机自动跟随，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理和放大示意尺寸，不用于精确月面定位；银河摄影来自 ESO/S. Brunier 的 4000×2000 全景，随地点、时间与视角投影；它是历史长曝光照片，不代表眼前天空或肉眼亮度，照片星点不能点选，识星仍以星表标记为准。不支持该渲染或关闭摄影时显示程序云气；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮可显示赤道网格与视场圆环；这只是星图视觉提示；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界。银河全景：ESO/S. Brunier，CC BY 4.0；来源 https://www.eso.org/public/images/eso0932a/ ，许可 https://creativecommons.org/licenses/by/4.0/ 。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}
@@ -528,3 +534,6 @@ $('calibrate').onclick=()=>{
  b.append(button('重置相机视场',()=>{calibration={az:0,alt:0,scale:1};localStorage.removeItem('calibration');if(ar)fov=cameraFov;dirty=true;$('sheet').close();},'secondary'));
 };
 resize();sync();calculate();
+function nativeAppPaused(){galaxyRenderer.release();clearSkyPointers();}
+function nativeAppResumed(){dirty=true;}
+document.addEventListener('visibilitychange',()=>{if(document.hidden)nativeAppPaused();else nativeAppResumed();});

@@ -191,7 +191,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     @Override public void onProviderEnabled(String p){}
     @Override public void onProviderDisabled(String p){}
     @Override public void onStatusChanged(String p,int s,Bundle b){}
-    @Override protected void onPause(){super.onPause();resumed=false;skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);web.onPause();web.pauseTimers();}
+    @Override protected void onPause(){super.onPause();resumed=false;skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);js("nativeAppPaused()");web.onPause();web.pauseTimers();}
     @Override public void onConfigurationChanged(Configuration configuration){
         super.onConfigurationChanged(configuration);
         // The WebView keeps the selected target and time; its resize event updates Canvas.
@@ -201,6 +201,6 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
             skyCamera.start();
         }
     }
-    @Override protected void onResume(){super.onResume();resumed=true;if(cameraWanted&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)skyCamera.start();if(web!=null){web.onResume();web.resumeTimers();}if(tracking)new Bridge().track(true);}
+    @Override protected void onResume(){super.onResume();resumed=true;if(cameraWanted&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)skyCamera.start();if(web!=null){web.onResume();web.resumeTimers();js("nativeAppResumed()");}if(tracking)new Bridge().track(true);}
     @Override protected void onDestroy(){skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);web.destroy();super.onDestroy();}
 }

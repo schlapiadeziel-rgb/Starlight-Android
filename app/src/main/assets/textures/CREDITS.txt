@@ -41,3 +41,9 @@ The original 2048x1024 JPEG is distributed unchanged as assets/textures/jupiter.
 Starlight applies spherical projection and illustrative observation lighting at runtime.
 The texture is a static illustration, not a live map of Jupiter's atmospheric features or storm longitude.
 No affiliation with or endorsement by Solar System Scope or INOVE.
+
+Milky Way photographic panorama: ESO/S. Brunier, eso0932a. CC BY 4.0.
+https://www.eso.org/public/images/eso0932a/
+https://creativecommons.org/licenses/by/4.0/
+Original 4000x2000 publication JPEG, unchanged. Runtime galactic reprojection
+and brightness/fading; historical long-exposure backdrop, not live visibility.

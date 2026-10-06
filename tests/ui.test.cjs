@@ -6,7 +6,7 @@ const w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','saturn-surface.js','deep-photo.js','photo-view.js','milky-way.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','saturn-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 assert.equal(w.SkyMilky.sprite(0,false),w.SkyMilky.sprite(0,false),'cloud texture is reused during redraw');
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
@@ -30,6 +30,7 @@ click('later');assert.notEqual(w.document.getElementById('time').textContent,'�
 click('track');assert(w.document.getElementById('toast').textContent.includes('安卓 App'));
 assert(!w.document.getElementById('grid').classList.contains('active'));click('grid');assert(w.document.getElementById('grid').classList.contains('active'));click('grid');assert(!w.document.getElementById('grid').classList.contains('active'));
 click('help');clickText('开启真实昼夜大气');assert.equal(JSON.parse(w.localStorage.getItem('config')).atmosphere,true);clickText('关闭昼夜大气 · 展示完整星图');assert.equal(JSON.parse(w.localStorage.getItem('config')).atmosphere,false);
+clickText('隐藏银河摄影');assert.equal(JSON.parse(w.localStorage.getItem('config')).galaxy,false);clickText('显示银河摄影');assert.equal(JSON.parse(w.localStorage.getItem('config')).galaxy,true);assert(text().includes('ESO/S. Brunier'));
 // Validate Canvas execution and sensor callbacks in the same application scope.
 require('node:vm').runInContext('render(); nativeLocation(0,0); tracking=true; nativePose([1,0,0,0,0,-1,0,1,0],0); render(); nativeUnavailable();',dom.getInternalVMContext());
 assert.equal(w.document.getElementById('mode').textContent,'自由探索');

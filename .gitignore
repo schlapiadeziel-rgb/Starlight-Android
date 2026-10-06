@@ -7,3 +7,5 @@ app/build/
 *.apk
 *.idsig
 node_modules/
+app/src/main/assets/textures/milky-way.jpg
+app/src/main/assets/textures/*.download

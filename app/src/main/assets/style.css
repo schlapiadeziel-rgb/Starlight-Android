@@ -56,3 +56,5 @@ canvas.moon-surface.interactive:active{cursor:grabbing}
 .deep-viewport{position:relative;width:100%;height:clamp(180px,52vh,500px);height:clamp(180px,52dvh,500px);overflow:hidden;background:#010308;border:1px solid #ffffff18;border-radius:14px;touch-action:none;cursor:grab;outline-offset:3px}
 .deep-viewport:active{cursor:grabbing}.deep-viewport:focus-visible{outline:2px solid var(--accent)}
 .deep-viewport img{position:absolute;left:0;top:0;max-width:none;max-height:none;pointer-events:none;user-select:none;will-change:transform}
+
+#heading #galaxyCredit{font-size:10px;color:#bdc8d6;text-shadow:0 1px 3px #000;letter-spacing:0}#galaxyCredit[hidden]{display:none}

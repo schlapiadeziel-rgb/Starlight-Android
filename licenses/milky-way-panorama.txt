@@ -1,0 +1,18 @@
+The Milky Way panorama — ESO image eso0932a
+Credit: ESO/S. Brunier
+Source: https://www.eso.org/public/images/eso0932a/
+Original publication JPEG: https://cdn.eso.org/images/publicationjpg/eso0932a.jpg
+4000 x 2000 pixel JPEG, bundled unchanged as textures/milky-way.jpg.
+
+License: Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+ESO usage policy: https://www.eso.org/public/copyright/
+Credit is displayed beside the sky while the photographic layer is active,
+and in the app's help page. ESO does not endorse this app.
+
+Runtime changes: reprojected onto the chart using galactic coordinates;
+brightness and latitude/horizon fading applied by a GPU shader. A smaller
+texture is used only when the device cannot upload the original size.
+This is a historical long-exposure photographic backdrop, not a live sky,
+a visibility forecast, or a replacement for the catalog star positions.
+The source mosaic contains stars and Solar System objects from its capture.

@@ -6,8 +6,8 @@ android {
         applicationId 'org.starlight.free'
         minSdk 26
         targetSdk 35
-        versionCode 37
-        versionName '0.3.25'
+        versionCode 38
+        versionName '0.3.26'
     }
     signingConfigs {
         release {
@@ -38,3 +38,15 @@ tasks.register('unpackSkyArt', Sync) {
 }
 android.sourceSets.main.assets.srcDir(skyArtDir)
 tasks.named('preBuild').configure { dependsOn('unpackSkyArt') }
+
+tasks.register('verifyMilkyWayPhoto') {
+    doLast {
+        def photo = file('src/main/assets/textures/milky-way.jpg')
+        if (!photo.exists()) throw new GradleException('Run python3 tools/prepare_milky_way.py at the project root before building.')
+        def digest = java.security.MessageDigest.getInstance('SHA-256').digest(photo.bytes).encodeHex().toString()
+        if (digest != '5363732a1629eed9df2f707b31eaae6b117c0ee35d7cc8d6ddd636bc6512302d') {
+            throw new GradleException('Milky Way photograph checksum does not match the licensed original.')
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn('verifyMilkyWayPhoto') }
