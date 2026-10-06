@@ -12,6 +12,16 @@
    if(![label.x,label.y,label.width,label.size,label.radius].every(Number.isFinite)||label.width<=0||label.size<=0)continue;
    const w=label.width+8,h=label.size+8,gap=Math.max(0,label.radius)+6;
    // Keep a label close to its symbol; do not move it across the sky to find space.
+   if(label.inline){
+    for(const anchor of label.alternatives||[label]){
+     if(![anchor.x,anchor.y,anchor.angle].every(Number.isFinite))continue;
+     const c=Math.abs(Math.cos(anchor.angle)),s=Math.abs(Math.sin(anchor.angle)),halfW=(w*c+h*s)/2,halfH=(w*s+h*c)/2;
+     const box={left:anchor.x-halfW,top:anchor.y-halfH,right:anchor.x+halfW,bottom:anchor.y+halfH};
+     if(box.left<6||box.top<6||box.right>width-6||box.bottom>height-6||occupied.some(b=>overlaps(box,b)))continue;
+     occupied.push(box);placed.push({...label,box,textX:anchor.x,textY:anchor.y,angle:anchor.angle});break;
+    }
+    continue;
+   }
    const positions=[[label.x-w/2,label.y+gap],[label.x-w/2,label.y-gap-h],[label.x+gap,label.y-h/2],[label.x-gap-w,label.y-h/2]];
    for(const [left,top] of positions){
     const box={left,top,right:left+w,bottom:top+h};

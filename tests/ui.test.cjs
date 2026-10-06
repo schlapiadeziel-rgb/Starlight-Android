@@ -6,7 +6,7 @@ const w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','saturn-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','saturn-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 assert.equal(w.SkyMilky.sprite(0,false),w.SkyMilky.sprite(0,false),'cloud texture is reused during redraw');
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}

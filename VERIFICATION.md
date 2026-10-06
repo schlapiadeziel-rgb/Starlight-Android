@@ -1,30 +1,30 @@
-# Starlight 0.3.26 verification — 2026-09-30
+# Starlight 0.3.27 source verification — 2026-10-06
 
-Implemented: an offline ESO/S. Brunier 4000×2000 Milky Way panorama,
-galactic/horizon reprojection, a cached WebGL texture and framebuffer,
-context-loss fallback/recovery, mode controls and resource release.
+Implemented: adaptive J2000 equatorial grid, clipped screen paths,
+readable tangent-aligned RA/declination ticks, alternative positions on
+the same curve, shared label exclusion, and cached bounded geometry.
 
 Passed:
-- All 20 existing/new Node test scripts via `npm test`.
-- 800 independent comparisons of the photo shader's rays against the
-  catalog projection and Astronomy Engine conversions, including phone
-  roll, portrait/landscape, different observers and dates.
-- Real WebGL pixel checks in desktop Chromium 154 with SwiftShader:
-  texture direction, horizon masking, reused frames, a framebuffer capped
-  at 1,500,000 pixels, context recovery, image cancellation and mode changes.
-- AR, red night mode and simulated daylight hide the photographic layer;
-  absent WebGL and missing images keep the procedural background.
-- The panorama's bytes match SHA-256
-  `5363732a1629eed9df2f707b31eaae6b117c0ee35d7cc8d6ddd636bc6512302d`.
-- Source syntax and workflow YAML parse; the packaged source includes
-  the exact photograph and its attribution/license.
+- All 21 Node test scripts via `npm test`, including existing catalog,
+  image, projection, sensor-filter, gesture, layout and UI tests.
+- 5,112 independent grid-vector comparisons against Astronomy Engine's
+  `RotateVector`, at three observers and two dates. Zoom/polar density,
+  clipped paths, upright tangent angles, same-view reuse and a limit of
+  fewer than 9,000 geometry samples are checked.
+- Tick placement checks preserve higher-priority target labels, avoid HUD
+  regions and stay within viewport bounds in both orientations.
+- Real Chromium 154/SwiftShader browser review: 390×844 portrait at 55°,
+  844×390 landscape at 20°, polar view at 85°, roll and red night mode.
+  No page errors. In the fixed Capricorn-centered portrait comparison,
+  visible coordinate ticks increased from 2 to 14; both RA and declination
+  ticks were present. This is an example view, not a universal count.
+- Source syntax and whitespace checks. Release workflow checks that the
+  new grid renderer and original offline photograph are bundled in APK.
 
 The release workflow requires Android compilation, bundled-asset checks
-and verification against the fixed signing certificate before publishing
-the APK. These source checks were completed before that release run;
-the matching GitHub Actions run records the release result.
+and verification against the fixed signing certificate before publishing.
+The matching GitHub Actions run records the release result.
 
-Android-device visual quality, sensor/AR alignment, frame rate, memory and
-power tests remain pending. Desktop rendering checks do not establish
-Android performance. Private signing material is excluded from this
-source package.
+Android-device visual quality, sensor/AR alignment, frame rate, memory
+and power tests remain pending. Desktop checks do not establish Android
+performance. Private signing material is excluded from the source.
