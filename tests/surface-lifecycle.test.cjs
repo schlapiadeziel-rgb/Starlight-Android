@@ -53,7 +53,14 @@ moon.onpointerdown(pointer(1));moon.onpointerdown(pointer(2));moon.onpointerup(p
 click('隐藏地形标注');tick(12080);moon.onpointerdown(pointer(1));moon.onpointerup(pointer(1));tick(12090);assert.equal(menu.value,'','hidden markers cannot select');
 click('显示地形标注');tick(12100);moon.onpointerdown(pointer(1));moon.onpointerup(pointer(1));tick(12110);assert.equal(menu.value,'6163');
 click('复位');tick(12120);assert.equal(menu.value,'');assert.equal(lastView.zoom,1);run('cleanupSheet()');assert.equal(frames.size,0);
+const sheet=w.document.getElementById('sheet');
+for(let i=0;i<3;i++){
+ run('showSunSurface()');tick(13000+i*100);const oldCanvas=body().querySelector('.surface-globe');w.document.getElementById('close').click();assert.equal(oldCanvas.width,0);
+ run('showMoonSurface()');const reopened=body().querySelector('.surface-globe');sheet.dispatchEvent(new w.Event('close'));tick(13010+i*100);
+ assert(sheet.open);assert(sheet.classList.contains('surface-immersive'));assert(reopened.width>=512,'delayed close event cannot dispose the reopened viewer');assert.equal(typeof latestImage.onload,'function');
+ sheet.close();sheet.dispatchEvent(new w.Event('close'));assert.equal(reopened.width,0,'current external close still releases resources');assert.equal(frames.size,0);
+}
 autoLoad=false;run('showSunSurface()');assert(!loop.active);assert([...body().querySelectorAll('.moon-controls button')].every(b=>b.disabled));
 latestImage.onerror();assert(body().textContent.includes('纹理加载失败'));assert.equal(frames.size,0);run('cleanupSheet()');
 run('ar=true;showMoonSurface()');assert.equal(body().querySelector('.surface-backdrop').width,0,'camera previews are not captured');assert(body().textContent.includes('非实时相机叠加'));run('cleanupSheet()');
-dom.window.close();console.log('PASS: immersive controls/state, bounded chart snapshot, AR exclusion, solar playback, glow, touch resolution, zoom, native/visibility pause, offscreen stop, reduced motion, close/switch disposal and failed texture lifecycle.');
+dom.window.close();console.log('PASS: immersive controls/state, bounded chart snapshot, AR exclusion, solar playback, glow, touch resolution, zoom, native/visibility pause, offscreen stop, reduced motion, delayed close/reopen, close/switch disposal and failed texture lifecycle.');

@@ -132,16 +132,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.31-immersive-celestial-view.apk
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.32-celestial-view-stability.apk
           python3 - <<'PYSOURCE'
           import pathlib, subprocess, zipfile
           names=[n.decode() for n in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if n]
           names.append('app/src/main/assets/textures/milky-way.jpg')
-          with zipfile.ZipFile('Starlight-0.3.31-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+          with zipfile.ZipFile('Starlight-0.3.32-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
               for name in names:
-                  archive.write(name,'Starlight-0.3.31/'+name)
+                  archive.write(name,'Starlight-0.3.32/'+name)
           PYSOURCE
-          sha256sum Starlight-0.3.31-immersive-celestial-view.apk Starlight-0.3.31-source.zip > SHA256SUMS
-          if ! gh release view v0.3.31 >/dev/null 2>&1; then
-            gh release create v0.3.31 Starlight-0.3.31-immersive-celestial-view.apk Starlight-0.3.31-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.31 immersive celestial detail views' --notes-file RELEASE_NOTES.md
+          sha256sum Starlight-0.3.32-celestial-view-stability.apk Starlight-0.3.32-source.zip > SHA256SUMS
+          if ! gh release view v0.3.32 >/dev/null 2>&1; then
+            gh release create v0.3.32 Starlight-0.3.32-celestial-view-stability.apk Starlight-0.3.32-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.32 celestial detail view stability' --notes-file RELEASE_NOTES.md
           fi

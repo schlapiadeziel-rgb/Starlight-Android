@@ -1,6 +1,10 @@
-# Starlight 0.3.31 source verification — 2026-10-07
+# Starlight 0.3.32 source verification — 2026-10-07
 
-Implemented: default immersive celestial views with a frozen chart background,
+Implemented: stale dialog-close events cannot dispose a reopened detail view;
+current external closes still release resources. Opening a detail updates a
+dirty chart before capturing its background, including after viewport resize.
+
+Retained: default immersive celestial views with a frozen chart background,
 visible zoom/reset/control entry, mode switching without changing the surface
 view or selected lunar feature, and loading/error feedback. The chart snapshot
 is capped at one million pixels, excludes AR camera content, and is released
@@ -25,6 +29,9 @@ Passed:
   AR exclusion and loading/error text. Lunar details default to inspection
   lighting with explicit non-current-phase copy; switching to actual phase
   lighting updates both the control state and visible caption.
+- Three deterministic close/reopen sequences dispatch a delayed old close
+  event into the reopened view and retain its renderer and image handlers.
+  Closing the current view still clears its canvas and scheduled frames.
 - Pure Java preview-geometry checks: expected uncropped and cropped fields,
   all four quarter-turn orientations, missing-angle derivation or explicit
   fallback, invalid input rejection and 432 camera/chart ray comparisons.
@@ -63,6 +70,11 @@ Passed:
   reset using a stand-in native bridge. No page errors. A Noto CJK font was
   loaded for a follow-up desktop layout check; Android font rendering remains
   unverified.
+- Additional real-browser sequences open Moon, Jupiter and Saturn in both
+  portrait and landscape, rotate/zoom by keyboard, switch controls and close
+  or Escape before immediately opening the next view. Full-disc bounds,
+  retained zoom, loaded textures and populated background snapshots pass;
+  no page errors. This sequence reproduced the stale-close bug before the fix.
 - Fullscreen detail layout keeps landscape controls in a separate scrollable
   panel. Covered chart rendering is skipped and restored when details close.
 - Existing original artwork/HIP anchors, galaxy/grid alignment, gestures,
