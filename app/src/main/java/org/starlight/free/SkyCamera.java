@@ -10,15 +10,15 @@ import java.util.List;
 /** Rear-camera preview only: no image capture, recording, upload, or microphone. */
 @SuppressWarnings("deprecation")
 final class SkyCamera implements TextureView.SurfaceTextureListener {
-    interface Listener { void ready(double horizontalFov); void failed(); }
+    interface Listener { void ready(double horizontalFov,int source); void failed(); }
     private final Activity activity;
     private final FrameLayout host;
     private final Listener listener;
     private TextureView texture;
     private Camera camera;
     private boolean wanted;
-    private double angle;
-    private int previewWidth,previewHeight;
+    private double horizontalAngle,verticalAngle;
+    private int previewWidth,previewHeight,orientation;
     SkyCamera(Activity activity,FrameLayout host,Listener listener){this.activity=activity;this.host=host;this.listener=listener;}
     void start(){
         wanted=true;
@@ -49,23 +49,20 @@ final class SkyCamera implements TextureView.SurfaceTextureListener {
             camera.setParameters(params);
             int rotation=activity.getWindowManager().getDefaultDisplay().getRotation();
             int degrees=rotation==Surface.ROTATION_90?90:rotation==Surface.ROTATION_180?180:rotation==Surface.ROTATION_270?270:0;
-            int orientation=(info.orientation-degrees+360)%360;
+            orientation=(info.orientation-degrees+360)%360;
             camera.setDisplayOrientation(orientation);
-            boolean swap=orientation%180!=0;
-            previewWidth=swap?chosen.height:chosen.width;previewHeight=swap?chosen.width:chosen.height;
-            params=camera.getParameters();angle=swap?params.getVerticalViewAngle():params.getHorizontalViewAngle();
-            if(!Double.isFinite(angle)||angle<10||angle>150)angle=45;
+            params=camera.getParameters();Camera.Size actual=params.getPreviewSize();
+            previewWidth=actual.width;previewHeight=actual.height;
+            horizontalAngle=params.getHorizontalViewAngle();verticalAngle=params.getVerticalViewAngle();
             camera.setErrorCallback((error,cam)->{stop();listener.failed();});
             camera.setPreviewTexture(surface);camera.startPreview();layout();
         }catch(Exception e){stop();listener.failed();}
     }
     private void layout(){
         if(camera==null||texture==null||host.getWidth()==0||host.getHeight()==0)return;
-        double scale=Math.max((double)host.getWidth()/previewWidth,(double)host.getHeight()/previewHeight);
-        int w=(int)Math.ceil(previewWidth*scale),h=(int)Math.ceil(previewHeight*scale);
-        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(w,h,Gravity.CENTER);texture.setLayoutParams(lp);
-        double visibleAngle=Math.toDegrees(2*Math.atan(Math.tan(Math.toRadians(angle/2))*host.getWidth()/w));
-        listener.ready(visibleAngle);
+        PreviewGeometry.Result result=PreviewGeometry.cover(previewWidth,previewHeight,orientation,host.getWidth(),host.getHeight(),horizontalAngle,verticalAngle);
+        FrameLayout.LayoutParams lp=new FrameLayout.LayoutParams(result.width,result.height,Gravity.CENTER);texture.setLayoutParams(lp);
+        listener.ready(result.horizontalFov,result.source);
     }
     public void onSurfaceTextureAvailable(SurfaceTexture s,int w,int h){open(s);}
     public void onSurfaceTextureSizeChanged(SurfaceTexture s,int w,int h){if(camera!=null)layout();}

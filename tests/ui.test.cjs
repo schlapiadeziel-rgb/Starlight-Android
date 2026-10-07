@@ -8,7 +8,7 @@ w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialog
 w.requestAnimationFrame=()=>{};w.cancelAnimationFrame=()=>{};w.setInterval=()=>{};
 Object.defineProperty(w.document,'hidden',{configurable:true,value:false});
 w.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','moon-features-data.js','moon-features.js','saturn-surface.js','sun-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','camera-view.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','moon-features-data.js','moon-features.js','saturn-surface.js','sun-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 assert.equal(w.SkyMilky.sprite(0,false),w.SkyMilky.sprite(0,false),'cloud texture is reused during redraw');
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
@@ -41,14 +41,17 @@ click('ar');assert(w.document.getElementById('toast').textContent.includes('新�
 let camera=false,exported=null,checks=0,downloads=0,installs=0,weatherCoords=null,issFetches=0;w.NativeSky={setCoordinates(){},track(){},camera(v){camera=v;},exportNotes(s){exported=s;},importNotes(){},checkUpdate(){checks++},downloadUpdate(){downloads++},installUpdate(){installs++},hasVerifiedUpdate(){return false},fetchWeather(lat,lon){weatherCoords=[lat,lon]},fetchIss(){issFetches++}};
 click('later');click('ar');clickText('开启相机 AR');assert(camera);
 const run=s=>require('node:vm').runInContext(s,dom.getInternalVMContext());
-run('nativeCameraReady(48);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
+run('nativeCameraReady(48,0);render();');assert(w.document.body.classList.contains('ar'));assert.equal(w.document.getElementById('time').textContent,'◷ 现在');
 // Simulate a device rotation without recreating the WebView: target/time remain intact.
 run("selected=byId.get('conOri');offset=0;");
 Object.defineProperty(w,'innerWidth',{configurable:true,value:760});Object.defineProperty(w,'innerHeight',{configurable:true,value:360});
-w.dispatchEvent(new w.Event('resize'));run('nativeCameraReady(62);render();');
+w.dispatchEvent(new w.Event('resize'));run('nativeCameraReady(62,1);render();');
 assert.equal(w.document.getElementById('sky').width,760);assert.equal(w.document.getElementById('sky').height,360);
 assert.equal(run('selected.id'),'conOri');assert.equal(run('fov'),62);
-click('calibrate');let range=body().querySelector('input');range.value='1.2';range.dispatchEvent(new w.Event('input'));assert.equal(JSON.parse(w.localStorage.getItem('calibration')).scale,1.2);
+click('calibrate');let range=body().querySelector('input');range.value='1.2';range.dispatchEvent(new w.Event('input'));assert.equal(JSON.parse(w.localStorage.getItem('calibration')).scale,1.2);assert(text().includes('估计'));assert.equal(range.id,'cameraWidthScale');assert.equal(JSON.parse(w.localStorage.getItem('calibration')).space,'tangent');assert(Math.abs(run('fov')-w.SkyCameraView.apply(62,1.2).fov)<1e-9);
+run("calibration={az:0,alt:0,scale:1.2,space:'angle'};nativeCameraReady(62,0)");assert(Math.abs(run('fov')-74.4)<1e-9);assert.equal(run('calibration.space'),'tangent');
+const migratedScale=run('calibration.scale');run('nativeCameraReady(62,0)');assert.equal(run('calibration.scale'),migratedScale,'legacy calibration migrates once');click('calibrate');assert(text().includes('相机报告参数'));
+run('nativeCameraReady(NaN,0)');click('calibrate');assert(text().includes('设备未报告'));clickText('重置相机视场');assert.equal(run('fov'),45);assert.equal(run('calibration.scale'),1);assert.equal(w.localStorage.getItem('calibration'),null);
 run("nativeCameraStopped('相机不可用');");assert(!w.document.body.classList.contains('ar'));assert(!camera);
 click('search');clickText('🛰 ISS 实时位置');assert.equal(issFetches,1);
 run('nativeIssResult(JSON.stringify({latitude:cfg.lat,longitude:cfg.lon,altitude:410,velocity:27500,timestamp:Date.now()}))');assert(text().includes('仰角 90.0°'));clickText('在星图定位此刻快照');assert.equal(run('selected.id'),'ISS');

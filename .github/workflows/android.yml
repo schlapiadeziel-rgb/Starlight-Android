@@ -27,6 +27,11 @@ jobs:
           node-version: 22
       - run: npm ci --ignore-scripts
       - run: npm test
+      - name: Verify camera preview geometry
+        run: |
+          mkdir -p "$RUNNER_TEMP/starlight-camera-tests"
+          javac -d "$RUNNER_TEMP/starlight-camera-tests" app/src/main/java/org/starlight/free/PreviewGeometry.java tests/java/PreviewGeometryTest.java
+          java -cp "$RUNNER_TEMP/starlight-camera-tests" org.starlight.free.PreviewGeometryTest
       - name: Prepare verified offline Milky Way photograph
         run: python3 tools/prepare_milky_way.py
       - name: Prepare fixed release signing key
@@ -75,6 +80,10 @@ jobs:
               assert b'sun-surface.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/sun-surface.js'))>3000
               assert b'SkySunSurface.motion' in apk.read('assets/app.js')
+              assert b'camera-view.js' in apk.read('assets/index.html')
+              assert len(apk.read('assets/camera-view.js'))>1000
+              assert b'SkyCameraView.apply' in apk.read('assets/app.js')
+              assert b'cameraWidthScale' in apk.read('assets/app.js')
               assert b'moon-features.js' in apk.read('assets/index.html')
               assert b'moon-features-data.js' in apk.read('assets/index.html')
               moon_data=json.loads(apk.read('assets/moon-features-data.js').decode().split('const MOON_FEATURE_DATA=',1)[1].strip().rstrip(';'))
@@ -120,16 +129,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.29-solar-lunar-details.apk
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.30-ar-view-calibration.apk
           python3 - <<'PYSOURCE'
           import pathlib, subprocess, zipfile
           names=[n.decode() for n in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if n]
           names.append('app/src/main/assets/textures/milky-way.jpg')
-          with zipfile.ZipFile('Starlight-0.3.29-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+          with zipfile.ZipFile('Starlight-0.3.30-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
               for name in names:
-                  archive.write(name,'Starlight-0.3.29/'+name)
+                  archive.write(name,'Starlight-0.3.30/'+name)
           PYSOURCE
-          sha256sum Starlight-0.3.29-solar-lunar-details.apk Starlight-0.3.29-source.zip > SHA256SUMS
-          if ! gh release view v0.3.29 >/dev/null 2>&1; then
-            gh release create v0.3.29 Starlight-0.3.29-solar-lunar-details.apk Starlight-0.3.29-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.29 solar and lunar detail viewers' --notes-file RELEASE_NOTES.md
+          sha256sum Starlight-0.3.30-ar-view-calibration.apk Starlight-0.3.30-source.zip > SHA256SUMS
+          if ! gh release view v0.3.30 >/dev/null 2>&1; then
+            gh release create v0.3.30 Starlight-0.3.30-ar-view-calibration.apk Starlight-0.3.30-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.30 camera geometry and AR width calibration' --notes-file RELEASE_NOTES.md
           fi

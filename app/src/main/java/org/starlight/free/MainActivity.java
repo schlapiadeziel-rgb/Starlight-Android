@@ -72,7 +72,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         content.addView(preview,new FrameLayout.LayoutParams(-1,-1));
         content.addView(web,new FrameLayout.LayoutParams(-1,-1));
         skyCamera=new SkyCamera(this,preview,new SkyCamera.Listener(){
-            public void ready(double fov){js(String.format(Locale.US,"nativeCameraReady(%.5f)",fov));}
+            public void ready(double fov,int source){js(String.format(Locale.US,"nativeCameraReady(%.5f,%d)",fov,source));}
             public void failed(){cameraWanted=false;js("nativeCameraStopped(\"摄像头不可用或被占用，请关闭其他相机应用后重试\")");}
         });
         setContentView(root);
