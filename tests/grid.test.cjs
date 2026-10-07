@@ -5,6 +5,14 @@ assert.equal(G.clip([-10,0],[400,0],390,844),null);
 assert.equal(G.clip(null,[100,100],390,844),null);
 assert.equal(G.clip([NaN,100],[100,100],390,844),null);
 assert.equal(G.hours(0),'0h');assert.equal(G.hours(23.5),'23h30m');
+const epoch=new Date('2000-01-01T12:00:00Z'),identity=[[1,0,0],[0,1,0],[0,0,1]],reference=G.create().get(85,M.basis(120,35),identity),ecliptic=reference.find(line=>line.id==='ecliptic');
+assert.equal(ecliptic.points.length,181);assert.equal(ecliptic.reference,'ecliptic');assert.equal(reference.find(line=>line.id==='dec0').reference,'equator');assert.equal(reference.find(line=>line.id==='ra0').reference,'meridian');assert.equal(reference.find(line=>line.id==='ra12').reference,'meridian');
+for(let i=0;i<ecliptic.points.length;i++){const a=i*2*Math.PI/180,v=A.RotateVector(A.Rotation_ECL_EQJ(),new A.Vector(Math.cos(a),Math.sin(a),0,epoch)),p=ecliptic.points[i];assert(Math.hypot(p.eq[0]-v.x,p.eq[1]-v.y,p.eq[2]-v.z)<1e-12);}
+let maxSolarLatitude=0;
+for(const year of [2000,2026,2050])for(let month=0;month<12;month++){
+ const date=new Date(Date.UTC(year,month,15)),sun=A.GeoVector('Sun',date,true),ecl=A.RotateVector(A.Rotation_EQJ_ECL(),sun),latitude=Math.abs(Math.asin(ecl.z/Math.hypot(ecl.x,ecl.y,ecl.z))*180/Math.PI);
+ maxSolarLatitude=Math.max(maxSolarLatitude,latitude);assert(latitude<.03,'the geocentric Sun stays near the fixed J2000 ecliptic across dates');
+}
 let compared=0;
 for(const [latitude,longitude] of [[39.9,116.4],[-33.9,151.2],[89,0]]){
  for(const time of ['2026-10-06T12:00:00Z','2040-04-17T00:00:00Z']){
@@ -35,4 +43,4 @@ for(const [latitude,longitude] of [[39.9,116.4],[-33.9,151.2],[89,0]]){
 const target={id:'target',name:'target',x:100,y:110,radius:0,size:12,width:50,priority:100};
 const tick={id:'tick',name:'12h',x:100,y:130,radius:0,size:11,width:30,priority:5,inline:true,alternatives:[{x:100,y:130,angle:.7},{x:250,y:220,angle:-.8}]};
 const result=L.layout([tick,target],390,844);assert.equal(result.length,2);assert.equal(result[0].id,'target');assert.equal(result[1].textX,250);
-console.log(`PASS: ${compared} independent grid rotations, zoom/polar density, clipped paths, upright ticks, HUD and target exclusion, bounded cached geometry.`);
+console.log(`PASS: ${compared} independent grid rotations, 181 ecliptic vectors, 36 solar dates (max J2000 latitude ${maxSolarLatitude.toFixed(5)} deg), reference planes, zoom/polar density, clipped paths, upright ticks, HUD and target exclusion, bounded cached geometry.`);

@@ -1,6 +1,12 @@
-# Starlight 0.3.32 source verification — 2026-10-07
+# Starlight 0.3.33 source verification — 2026-10-07
 
-Implemented: stale dialog-close events cannot dispose a reopened detail view;
+Implemented: colored dashed reference circles in the equatorial grid: fixed
+J2000 ecliptic (yellow), equator (red), and 0h/12h RA meridian (green).
+The ecliptic uses the bundled Astronomy Engine ECL-to-EQJ rotation constants
+and the same EQJ-to-horizon transformation as catalog stars. Reference labels
+have additional placement alternatives but still defer to objects and HUD.
+
+Retained: stale dialog-close events cannot dispose a reopened detail view;
 current external closes still release resources. Opening a detail updates a
 dirty chart before capturing its background, including after viewport resize.
 
@@ -24,6 +30,17 @@ and feature-centered inspection; detail-view lifecycle cleanup and adaptive
 
 Passed:
 - All 26 Node test scripts via npm test.
+- Grid checks: 5,214 independently calculated horizon rotations, 181 ecliptic
+  vector comparisons against Astronomy Engine, and 36 geocentric Sun dates
+  in 2000/2026/2050. Maximum sampled absolute J2000 ecliptic latitude is
+  0.00675 degrees; this is a numerical model check, not observational accuracy.
+  Existing pole density, clipping, label collision and <9,000-point geometry
+  bounds remain passing. The ecliptic is a fixed epoch plane, not an obstacle
+  or occultation prediction.
+- Real Chromium reference-line checks in portrait and landscape, with roll
+  and red night mode: three dashed stroke colors, visible ecliptic name,
+  bounded text and grid-toggle hiding. Dash state is restored so later
+  chart strokes do not inherit reference styling. No page errors.
 - DOM lifecycle checks cover default immersive mode, two-way switching,
   preserved lunar coordinates/zoom/selection, snapshot size and disposal,
   AR exclusion and loading/error text. Lunar details default to inspection

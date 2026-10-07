@@ -1,4 +1,4 @@
-/* J2000 equatorial grid. Coordinates share the catalog's horizon rotation. */
+/* J2000 grid and reference circles. All share the catalog's horizon rotation. */
 (function(root){
  'use strict';
  const D=Math.PI/180;
@@ -6,9 +6,12 @@
  function hours(h){const whole=Math.floor(h),minutes=Math.round((h-whole)*60);return whole+'h'+(minutes?String(minutes).padStart(2,'0')+'m':'');}
  function geometry(hourStep,degreeStep){
   const lines=[];
-  for(let h=0;h<24;h+=hourStep){const points=[];for(let d=-90;d<=90;d+=2)points.push(point(h,d));lines.push({id:'ra'+h,name:hours(h),equator:false,points});}
+  for(let h=0;h<24;h+=hourStep){const points=[];for(let d=-90;d<=90;d+=2)points.push(point(h,d));lines.push({id:'ra'+h,name:hours(h),equator:false,reference:h===0||h===12?'meridian':null,points});}
   const bound=Math.floor(89/degreeStep)*degreeStep;
-  for(let d=-bound;d<=bound;d+=degreeStep){const points=[];for(let a=0;a<=24;a+=.2)points.push(point(a,d));points.push(point(24,d));lines.push({id:'dec'+d,name:(d>0?'+':'')+d+'°',equator:d===0,points});}
+  for(let d=-bound;d<=bound;d+=degreeStep){const points=[];for(let a=0;a<=24;a+=.2)points.push(point(a,d));points.push(point(24,d));lines.push({id:'dec'+d,name:d===0?'赤道 0°':(d>0?'+':'')+d+'°',equator:d===0,reference:d===0?'equator':null,points});}
+  // The bundled Astronomy Engine ECL -> EQJ rotation fixes the J2000 plane.
+  const ecliptic=[];for(let longitude=0;longitude<=360;longitude+=2){const a=longitude*D,s=Math.sin(a);ecliptic.push({eq:[Math.cos(a),.9174821430670688*s,.3977769691083922*s],v:[0,0,0]});}
+  lines.push({id:'ecliptic',name:'黄道 J2000',equator:false,reference:'ecliptic',points:ecliptic});
   return lines;
  }
  function create(){
@@ -46,7 +49,8 @@
    }
    if(!segments.length)continue;
    const alternatives=[];
-   if(length>=75)for(const fraction of [.5,.3,.7,.15,.85]){let distance=length*fraction;
+   const fractions=line.reference?[.5,.3,.7,.15,.85,.4,.6,.25,.75,.1,.9]:[.5,.3,.7,.15,.85];
+   if(length>=75)for(const fraction of fractions){let distance=length*fraction;
     for(const segment of segments){if(distance>segment.n){distance-=segment.n;continue;}
      const [x,y,endX,endY]=segment.p,t=distance/segment.n;let angle=Math.atan2(endY-y,endX-x);
      if(angle>Math.PI/2)angle-=Math.PI;if(angle<-Math.PI/2)angle+=Math.PI;
