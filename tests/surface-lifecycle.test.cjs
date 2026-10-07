@@ -17,7 +17,10 @@ const originalMotion=w.SkySunSurface.motion;w.SkySunSurface.motion=(...args)=>{l
 const run=s=>vm.runInContext(s,dom.getInternalVMContext()),body=()=>w.document.getElementById('sheetBody');
 const click=t=>{const btn=[...body().querySelectorAll('button')].find(b=>b.textContent===t);assert(btn,t);btn.click();};
 const tick=t=>{const batch=[...frames];for(const [id,fn] of batch){if(frames.delete(id))fn(t);}};
-run('showSunSurface()');assert(loop.active);assert(w.document.getElementById('sheet').classList.contains('surface-sheet'));run('dirty=true;render()');assert(run('dirty'),'covered chart does not redraw');tick(0);const base=projections;
+run('canvas.width=4000;canvas.height=3000;showSunSurface()');assert(loop.active);assert(w.document.getElementById('sheet').classList.contains('surface-sheet'));assert(w.document.getElementById('sheet').classList.contains('surface-immersive'));
+const backdrop=body().querySelector('.surface-backdrop');assert(backdrop.width*backdrop.height<=1000000);assert(backdrop.width>0);assert.equal(backdrop.getAttribute('aria-hidden'),'true');
+click('显示控件');assert(!w.document.getElementById('sheet').classList.contains('surface-immersive'));click('沉浸浏览');assert(w.document.getElementById('sheet').classList.contains('surface-immersive'));assert.equal(body().querySelector('.surface-browse').getAttribute('aria-pressed'),'true');
+run('dirty=true;render()');assert(run('dirty'),'covered chart does not redraw');tick(0);const base=projections;
 for(let t=17;t<=1000;t+=17)tick(t);assert.equal(projections,base,'live overlay uses one surface');
 click('暂停动态效果');assert(!loop.active);tick(1010);assert.equal(frames.size,0);const held=loop.time;
 click('播放动态效果');tick(5000);assert.equal(loop.time,held);assert(loop.active);
@@ -32,13 +35,14 @@ hidden=false;w.document.dispatchEvent(new w.Event('visibilitychange'));tick(1100
 observer.callback([{isIntersecting:false}]);assert(!loop.active);observer.callback([{isIntersecting:true}]);assert(loop.active);
 for(let i=0;i<4;i++)click('＋');assert(!loop.active,'fully zoomed sphere has no visible animated limb');tick(11010);click('复位');assert(loop.active);tick(11020);
 preference.matches=true;for(const fn of preference.listeners)fn();assert(!loop.active);assert(body().textContent.includes('动态已暂停'));tick(11030);
-run('cleanupSheet()');assert(!loop.active);assert.equal(frames.size,0);assert.equal(canvas.width,0);assert.equal(latestImage.source,'');assert.equal(latestImage.onload,null);assert(observer.disconnected);assert.equal(preference.listeners.size,0);assert(!w.document.getElementById('sheet').classList.contains('surface-sheet'));
+run('cleanupSheet()');assert(!loop.active);assert.equal(frames.size,0);assert.equal(canvas.width,0);assert.equal(backdrop.width,0);assert.equal(backdrop.height,0);assert.equal(latestImage.source,'');assert.equal(latestImage.onload,null);assert(observer.disconnected);assert.equal(preference.listeners.size,0);assert(!w.document.getElementById('sheet').classList.contains('surface-sheet'));assert(!w.document.getElementById('sheet').classList.contains('surface-immersive'));
 canvas.onwheel({deltaY:-1,preventDefault(){}});assert.equal(frames.size,0,'detached handlers cannot restart drawing');
 run('showSunSurface()');assert(!loop.active,'system reduced motion disables autoplay');tick(12000);click('播放动态效果');assert(loop.active,'explicit playback is available');
 run('showMoonSurface()');assert(!loop.active);assert.equal(preference.listeners.size,0);tick(12010);
 let menu=body().querySelector('#moonFeature');assert.equal(menu.options.length,41);
 menu.value='6163';menu.dispatchEvent(new w.Event('change'));tick(12020);
 assert.equal(lastView.yaw,-11.22);assert.equal(lastView.pitch,-43.30);assert.equal(lastView.zoom,2);assert(lastView.inspect);assert(body().textContent.includes('85.29 km'));
+click('显示控件');tick(12021);assert.equal(menu.value,'6163');click('沉浸浏览');tick(12022);assert.equal(menu.value,'6163');assert.equal(lastView.yaw,-11.22);assert.equal(lastView.pitch,-43.30);assert.equal(lastView.zoom,2);
 menu.value='';menu.dispatchEvent(new w.Event('change'));tick(12030);
 const moon=body().querySelector('canvas');moon.getBoundingClientRect=()=>({left:0,top:0,width:320,height:320});
 const pointer=id=>({pointerId:id,clientX:160,clientY:160,preventDefault(){}});
@@ -51,4 +55,5 @@ click('显示地形标注');tick(12100);moon.onpointerdown(pointer(1));moon.onpo
 click('复位');tick(12120);assert.equal(menu.value,'');assert.equal(lastView.zoom,1);run('cleanupSheet()');assert.equal(frames.size,0);
 autoLoad=false;run('showSunSurface()');assert(!loop.active);assert([...body().querySelectorAll('.moon-controls button')].every(b=>b.disabled));
 latestImage.onerror();assert(body().textContent.includes('纹理加载失败'));assert.equal(frames.size,0);run('cleanupSheet()');
-dom.window.close();console.log('PASS: solar playback, glow, touch resolution, zoom, native/visibility pause, offscreen stop, reduced motion, close/switch disposal and failed texture lifecycle.');
+run('ar=true;showMoonSurface()');assert.equal(body().querySelector('.surface-backdrop').width,0,'camera previews are not captured');assert(body().textContent.includes('非实时相机叠加'));run('cleanupSheet()');
+dom.window.close();console.log('PASS: immersive controls/state, bounded chart snapshot, AR exclusion, solar playback, glow, touch resolution, zoom, native/visibility pause, offscreen stop, reduced motion, close/switch disposal and failed texture lifecycle.');

@@ -57,14 +57,30 @@ dialog.surface-sheet{width:100vw;height:100dvh;max-width:none;max-height:100dvh;
 .surface-sheet .sheet-head{top:-8px;background:#02070b;min-height:44px}.surface-sheet h2{font-size:18px;margin:8px 0}
 .surface-body{display:grid;grid-template-columns:minmax(0,1fr);gap:4px}.surface-caption{text-align:center;margin:4px 0}
 canvas.moon-surface.surface-globe{width:min(100%,480px,calc(100dvh - 270px));background:transparent;border-radius:0;margin:8px auto}
+.surface-stage{min-width:0;position:relative}.surface-backdrop,.surface-scene-note,.surface-feedback{display:none}.surface-dock{display:flex;justify-content:center;margin:8px 0}.surface-browse{border-radius:24px;padding:0 20px;background:#111b2ee8;font-size:12px}
 .surface-panel{width:min(100%,480px);margin:0 auto}.surface-panel .copy{font-size:11px;line-height:1.55;margin:8px 0}.surface-panel .secondary{margin:4px 0;padding:7px}
 .surface-notes{font-size:11px;color:var(--muted);margin-top:12px}.surface-notes summary{cursor:pointer;min-height:32px;padding:6px 0}
 @media (orientation:landscape) and (max-height:600px) and (min-width:640px){
  .surface-body{grid-template-columns:minmax(0,1fr) minmax(230px,320px);grid-template-rows:auto 1fr;column-gap:20px;height:calc(100dvh - 62px)}
  .surface-caption{grid-column:1;grid-row:1;font-size:10px;margin:0}
- canvas.moon-surface.surface-globe{grid-column:1;grid-row:2;width:min(100%,480px,calc(100dvh - 95px));margin:auto}
+ .surface-stage{grid-column:1;grid-row:2;display:grid;place-items:center}
+ canvas.moon-surface.surface-globe{width:min(100%,480px,calc(100dvh - 95px));margin:auto}
  .surface-panel{grid-column:2;grid-row:1 / span 2;height:calc(100dvh - 70px);overflow-y:auto;overscroll-behavior:contain;padding:0 4px 12px}
+ .surface-dock{grid-column:2;grid-row:2;align-self:end;background:#02070b;margin:0 4px;z-index:2}.surface-panel{padding-bottom:60px}
 }
+dialog.surface-sheet.surface-immersive{overflow:hidden;padding:8px 12px}
+.surface-immersive .sheet-head{background:transparent;position:relative;z-index:3;text-shadow:0 1px 5px #000}
+.surface-immersive .surface-body{display:block;height:auto}
+.surface-immersive .surface-stage{position:fixed;inset:0;display:grid;place-items:center;isolation:isolate}
+.surface-immersive canvas.moon-surface.surface-globe{position:relative;z-index:1;width:min(calc(100vw - 24px),calc(100dvh - 100px),1100px);margin:0;max-width:none}
+.surface-immersive canvas.surface-backdrop{position:absolute;inset:0;z-index:0;display:block;width:100%;height:100%;object-fit:cover;opacity:.65;pointer-events:none}
+.surface-immersive .surface-caption{position:fixed;top:max(54px,calc(env(safe-area-inset-top) + 48px));left:16px;right:16px;z-index:2;font-size:10px;text-shadow:0 1px 5px #000;pointer-events:none}
+.surface-immersive .surface-scene-note{display:block;position:absolute;bottom:max(110px,calc(env(safe-area-inset-bottom) + 102px));left:12px;right:12px;margin:0;text-align:center;font-size:10px;color:#b8c5dc;text-shadow:0 1px 5px #000;z-index:2;pointer-events:none}
+.surface-immersive .surface-feedback{display:block;position:absolute;left:16px;right:16px;top:40%;z-index:2;margin:0;text-align:center;color:var(--ink);font-size:13px;text-shadow:0 1px 5px #000}.surface-feedback[hidden]{display:none}
+.surface-immersive .surface-panel{display:contents}
+.surface-immersive .surface-panel>*:not(.moon-controls){display:none}
+.surface-immersive .moon-controls{position:fixed;bottom:max(60px,calc(env(safe-area-inset-bottom) + 56px));left:12px;right:12px;z-index:3}.surface-immersive .moon-controls button{background:#111b2edb;box-shadow:0 1px 8px #0006}
+.surface-immersive .surface-dock{position:fixed;bottom:max(8px,env(safe-area-inset-bottom));left:12px;right:12px;z-index:3;margin:0;background:transparent}
 .deep-photo{display:block;width:100%;max-height:340px;object-fit:contain;margin:16px 0 8px;background:#04070d;border-radius:12px}
 .deep-viewport{position:relative;width:100%;height:clamp(180px,52vh,500px);height:clamp(180px,52dvh,500px);overflow:hidden;background:#010308;border:1px solid #ffffff18;border-radius:14px;touch-action:none;cursor:grab;outline-offset:3px}
 .deep-viewport:active{cursor:grabbing}.deep-viewport:focus-visible{outline:2px solid var(--accent)}

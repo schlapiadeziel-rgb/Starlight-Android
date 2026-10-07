@@ -108,8 +108,9 @@ const oldImage=w.Image,oldFrame=w.requestAnimationFrame,oldDraw=w.SkyMoonSurface
 w.Image=class {set src(v){if(v&&this.onload)this.onload();}};w.requestAnimationFrame=fn=>{fn();return 1;};
 w.SkyMoonSurface.draw=(c,img,phase,view)=>{viewState={...view,size:c.width};viewDraws++;};
 w.SkySunSurface.create=(image,renderer)=>({draw(c,view){renderer.draw(c,image,180,view);},release(){},dispose(){}});
-run('showMoonSurface()');let surface=body().querySelector('canvas');assert.equal(viewState.zoom,1);
-clickText('＋');assert.equal(viewState.zoom,1.25);clickText('切换地形照明');assert.equal(viewState.inspect,true);
+run('showMoonSurface()');let surface=body().querySelector('canvas');assert.equal(viewState.zoom,1);assert.equal(viewState.inspect,true);assert(body().querySelector('.surface-caption').textContent.includes('非实际月相'));
+clickText('恢复月相照明');assert.equal(viewState.inspect,false);assert(body().querySelector('.surface-caption').textContent.includes('月面照明'));clickText('切换地形照明');assert.equal(viewState.inspect,true);
+clickText('＋');assert.equal(viewState.zoom,1.25);
 surface.onpointerdown({pointerId:1,clientX:100,clientY:100,preventDefault(){}});
 surface.onpointermove({pointerId:1,clientX:140,clientY:120});assert(viewState.yaw>0);assert.equal(viewState.size,256);
 surface.onpointerup({pointerId:1});assert.equal(viewState.size,512);

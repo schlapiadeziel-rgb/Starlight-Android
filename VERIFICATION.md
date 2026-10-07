@@ -1,6 +1,12 @@
-# Starlight 0.3.30 source verification — 2026-10-07
+# Starlight 0.3.31 source verification — 2026-10-07
 
-Implemented: camera preview geometry using the actual returned preview size,
+Implemented: default immersive celestial views with a frozen chart background,
+visible zoom/reset/control entry, mode switching without changing the surface
+view or selected lunar feature, and loading/error feedback. The chart snapshot
+is capped at one million pixels, excludes AR camera content, and is released
+on close. It is a fixed browsing backdrop, not live directional guidance.
+
+Retained: camera preview geometry using the actual returned preview size,
 rotation and center-cover crop; reported/derived/assumed field-angle status;
 tangent-plane width calibration with one-time legacy settings migration.
 Fullscreen details release covered galaxy/artwork resources; backgrounding
@@ -14,6 +20,11 @@ and feature-centered inspection; detail-view lifecycle cleanup and adaptive
 
 Passed:
 - All 26 Node test scripts via npm test.
+- DOM lifecycle checks cover default immersive mode, two-way switching,
+  preserved lunar coordinates/zoom/selection, snapshot size and disposal,
+  AR exclusion and loading/error text. Lunar details default to inspection
+  lighting with explicit non-current-phase copy; switching to actual phase
+  lighting updates both the control state and visible caption.
 - Pure Java preview-geometry checks: expected uncropped and cropped fields,
   all four quarter-turn orientations, missing-angle derivation or explicit
   fallback, invalid input rejection and 432 camera/chart ray comparisons.
@@ -46,17 +57,20 @@ Passed:
   landscape, with 2× screen density: solar motion/glow, one cached projection
   across changing frames, native pause/rebuild, offscreen stop, reduced motion
   and deliberately missing texture; lunar near/far centering and detail layout;
-  legacy AR calibration migration, width slider, >110-degree AR field,
-  parameter source copy and reset using a stand-in native bridge.
-  No page errors. Desktop Chinese glyphs are unavailable in this environment;
-  geometry and image checks do not validate Android font rendering.
+  immersive portrait/landscape bounds, hidden/visible controls, preserved
+  far-side lunar selection, visible texture failure, legacy AR calibration
+  migration, width slider, >110-degree AR field, parameter source copy and
+  reset using a stand-in native bridge. No page errors. A Noto CJK font was
+  loaded for a follow-up desktop layout check; Android font rendering remains
+  unverified.
 - Fullscreen detail layout keeps landscape controls in a separate scrollable
   panel. Covered chart rendering is skipped and restored when details close.
 - Existing original artwork/HIP anchors, galaxy/grid alignment, gestures,
   astronomy, phase and Saturn ring rendering tests remain passing.
 
 The release workflow requires the pure Java camera checks, Android compilation,
-bundled-asset checks including camera calibration, the solar renderer and
+bundled-asset checks including immersive-view resources, camera calibration,
+the solar renderer and
 40 lunar records, and verification against
 the fixed signing certificate before publishing. The matching GitHub Actions
 run records the release result.

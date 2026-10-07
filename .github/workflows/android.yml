@@ -84,6 +84,9 @@ jobs:
               assert len(apk.read('assets/camera-view.js'))>1000
               assert b'SkyCameraView.apply' in apk.read('assets/app.js')
               assert b'cameraWidthScale' in apk.read('assets/app.js')
+              assert b'surface-immersive' in apk.read('assets/app.js')
+              assert b'surface-backdrop' in apk.read('assets/style.css')
+              assert b'surface-feedback' in apk.read('assets/style.css')
               assert b'moon-features.js' in apk.read('assets/index.html')
               assert b'moon-features-data.js' in apk.read('assets/index.html')
               moon_data=json.loads(apk.read('assets/moon-features-data.js').decode().split('const MOON_FEATURE_DATA=',1)[1].strip().rstrip(';'))
@@ -129,16 +132,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.30-ar-view-calibration.apk
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.31-immersive-celestial-view.apk
           python3 - <<'PYSOURCE'
           import pathlib, subprocess, zipfile
           names=[n.decode() for n in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if n]
           names.append('app/src/main/assets/textures/milky-way.jpg')
-          with zipfile.ZipFile('Starlight-0.3.30-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+          with zipfile.ZipFile('Starlight-0.3.31-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
               for name in names:
-                  archive.write(name,'Starlight-0.3.30/'+name)
+                  archive.write(name,'Starlight-0.3.31/'+name)
           PYSOURCE
-          sha256sum Starlight-0.3.30-ar-view-calibration.apk Starlight-0.3.30-source.zip > SHA256SUMS
-          if ! gh release view v0.3.30 >/dev/null 2>&1; then
-            gh release create v0.3.30 Starlight-0.3.30-ar-view-calibration.apk Starlight-0.3.30-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.30 camera geometry and AR width calibration' --notes-file RELEASE_NOTES.md
+          sha256sum Starlight-0.3.31-immersive-celestial-view.apk Starlight-0.3.31-source.zip > SHA256SUMS
+          if ! gh release view v0.3.31 >/dev/null 2>&1; then
+            gh release create v0.3.31 Starlight-0.3.31-immersive-celestial-view.apk Starlight-0.3.31-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.31 immersive celestial detail views' --notes-file RELEASE_NOTES.md
           fi
