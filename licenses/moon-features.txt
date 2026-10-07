@@ -1,0 +1,21 @@
+Lunar landmark selection: Gazetteer of Planetary Nomenclature, maintained by
+the USGS Astrogeology Science Center on behalf of IAU WGPSN with NASA support.
+Official source page: https://planetarynames.wr.usgs.gov/Page/MOON/target
+Data source: https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.kmz
+Snapshot and original KMZ hash: moon-features-source.json.
+
+Forty adopted names, reference center coordinates and directory diameters are
+selected from the official lunar KMZ. Only numerical facts and feature names
+are bundled. Coordinates and diameters are rounded to two decimals; longitude
+is east-positive and normalized to -180..180. The original data is in the
+LOLA 2011 control network. Marker dots denote directory reference centers,
+not terrain boundaries, landing positions or pixel-exact scientific alignment.
+English names are the directory names. Chinese display translations are by
+Starlight and are not claimed as official IAU translations.
+No USGS, IAU or NASA affiliation or endorsement.
+
+Each source record is available at https://planetarynames.wr.usgs.gov/Feature/ID
+using the numeric ID stored in moon-features-data.js.
+The regeneration helper tools/prepare_moon_features.py accepts the downloaded
+official KMZ via --input or retrieves the current official snapshot. Regeneration
+may change coordinates and requires review; it is not run automatically in CI.

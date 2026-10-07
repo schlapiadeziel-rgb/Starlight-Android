@@ -43,5 +43,5 @@
  // The right-hand bright limb of a waxing sprite and left-hand limb of a
  // waning sprite must both point toward the projected Sun.
  function rotation(sunwardAngle,phase){return sunwardAngle-(phase>180?Math.PI:0);}
- const api={sample,draw,rotation};root.SkyMoonSurface=api;if(typeof module!=='undefined')module.exports=api;
+ const api={sample,draw,rotation,release(image){sources.delete(image);}};root.SkyMoonSurface=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

@@ -9,3 +9,6 @@ app/build/
 node_modules/
 app/src/main/assets/textures/milky-way.jpg
 app/src/main/assets/textures/*.download
+
+__pycache__/
+*.pyc

@@ -72,6 +72,14 @@ jobs:
               assert b'function expanded' in apk.read('assets/art.js')
               assert b'function presentation' in apk.read('assets/art.js')
               assert b'appendArtControl' in apk.read('assets/app.js')
+              assert b'sun-surface.js' in apk.read('assets/index.html')
+              assert len(apk.read('assets/sun-surface.js'))>3000
+              assert b'SkySunSurface.motion' in apk.read('assets/app.js')
+              assert b'moon-features.js' in apk.read('assets/index.html')
+              assert b'moon-features-data.js' in apk.read('assets/index.html')
+              moon_data=json.loads(apk.read('assets/moon-features-data.js').decode().split('const MOON_FEATURE_DATA=',1)[1].strip().rstrip(';'))
+              assert len(moon_data)==40 and len({f['id'] for f in moon_data})==40
+              assert b'SkyMoonFeatures.visible' in apk.read('assets/app.js')
               assert b'[320,640,1024]' in apk.read('assets/deep-photo.js')
               assert b'milky-way.js' in apk.read('assets/index.html')
               assert len(apk.read('assets/milky-way.js'))>1000
@@ -112,16 +120,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.28-artwork-clarity.apk
+          cp app/build/outputs/apk/release/app-release.apk Starlight-0.3.29-solar-lunar-details.apk
           python3 - <<'PYSOURCE'
           import pathlib, subprocess, zipfile
           names=[n.decode() for n in subprocess.check_output(['git','ls-files','-z']).split(b'\0') if n]
           names.append('app/src/main/assets/textures/milky-way.jpg')
-          with zipfile.ZipFile('Starlight-0.3.28-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
+          with zipfile.ZipFile('Starlight-0.3.29-source.zip','w',zipfile.ZIP_DEFLATED) as archive:
               for name in names:
-                  archive.write(name,'Starlight-0.3.28/'+name)
+                  archive.write(name,'Starlight-0.3.29/'+name)
           PYSOURCE
-          sha256sum Starlight-0.3.28-artwork-clarity.apk Starlight-0.3.28-source.zip > SHA256SUMS
-          if ! gh release view v0.3.28 >/dev/null 2>&1; then
-            gh release create v0.3.28 Starlight-0.3.28-artwork-clarity.apk Starlight-0.3.28-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.28 clearer constellation artwork' --notes-file RELEASE_NOTES.md
+          sha256sum Starlight-0.3.29-solar-lunar-details.apk Starlight-0.3.29-source.zip > SHA256SUMS
+          if ! gh release view v0.3.29 >/dev/null 2>&1; then
+            gh release create v0.3.29 Starlight-0.3.29-solar-lunar-details.apk Starlight-0.3.29-source.zip SHA256SUMS --target "$GITHUB_SHA" --prerelease --title 'Starlight 0.3.29 solar and lunar detail viewers' --notes-file RELEASE_NOTES.md
           fi

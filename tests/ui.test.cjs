@@ -5,8 +5,10 @@ const dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'h
 const w=dom.window;
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
-w.requestAnimationFrame=()=>{};w.setInterval=()=>{};
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','saturn-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+w.requestAnimationFrame=()=>{};w.cancelAnimationFrame=()=>{};w.setInterval=()=>{};
+Object.defineProperty(w.document,'hidden',{configurable:true,value:false});
+w.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','moon-features-data.js','moon-features.js','saturn-surface.js','sun-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 assert.equal(w.SkyMilky.sprite(0,false),w.SkyMilky.sprite(0,false),'cloud texture is reused during redraw');
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
@@ -85,7 +87,7 @@ run('selected.alt=-5;dirty=true;render();');assert(w.document.getElementById('ta
 run("selected=byId.get('Moon');tracking=false;az=selected.az;alt=selected.alt;dirty=true;render();");assert.equal(run('selected.id'),'Moon');
 run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.nearest(width/2,height/2)===selected'));
 run('cfg.art=true;dirty=true;render()');assert(run('artwork.filter(a=>a.image).length<=12'));run('cfg.art=false;dirty=true;render()');assert.equal(run('artwork.filter(a=>a.image).length'),0);
-run("details(byId.get('Moon'))");clickText('查看月面细节');assert(body().querySelector('canvas.moon-surface'));assert(text().includes('未模拟天平动'));
+run("details(byId.get('Moon'))");clickText('查看月面细节');assert(body().querySelector('canvas.moon-surface'));assert(text().includes('未模拟天平动'));click('close');
 run("let moonDraws=0;Object.defineProperty(moonMap,'complete',{configurable:true,value:true});Object.defineProperty(moonMap,'naturalWidth',{configurable:true,value:2048});SkyMoonSurface.draw=()=>{moonDraws++};tracking=false;az=bodies[1].az;alt=bodies[1].alt;dirty=true;render();dirty=true;render()");
 assert.equal(run('moonDraws'),1,'sky-map Moon sprite should reuse a cached phase');
 run('bodies[1].phaseAngle+=4;dirty=true;render()');assert.equal(run('moonDraws'),2,'changed phase should redraw the sprite');
@@ -99,9 +101,10 @@ click('focusMode');assert(!w.document.body.classList.contains('sky-focus'));
 assert.equal(w.document.getElementById('focusMode').getAttribute('aria-pressed'),'false');
 assert.equal(run('[selected.id,offset,fov,tracking].join("/")'),viewingState);
 // Exercise the actual moon viewer handlers with a decoded-image stand-in.
-const oldImage=w.Image,oldFrame=w.requestAnimationFrame,oldDraw=w.SkyMoonSurface.draw;let viewState=null,viewDraws=0;
-w.Image=class {set src(v){this.onload();}};w.requestAnimationFrame=fn=>{fn();return 1;};
+const oldImage=w.Image,oldFrame=w.requestAnimationFrame,oldDraw=w.SkyMoonSurface.draw,oldSunCreate=w.SkySunSurface.create;let viewState=null,viewDraws=0;
+w.Image=class {set src(v){if(v&&this.onload)this.onload();}};w.requestAnimationFrame=fn=>{fn();return 1;};
 w.SkyMoonSurface.draw=(c,img,phase,view)=>{viewState={...view,size:c.width};viewDraws++;};
+w.SkySunSurface.create=(image,renderer)=>({draw(c,view){renderer.draw(c,image,180,view);},release(){},dispose(){}});
 run('showMoonSurface()');let surface=body().querySelector('canvas');assert.equal(viewState.zoom,1);
 clickText('＋');assert.equal(viewState.zoom,1.25);clickText('切换地形照明');assert.equal(viewState.inspect,true);
 surface.onpointerdown({pointerId:1,clientX:100,clientY:100,preventDefault(){}});
@@ -141,7 +144,7 @@ const afterViewer=saturnDraws;
 run("tracking=false;az=byId.get('Saturn').az;alt=Math.max(-85,byId.get('Saturn').alt);dirty=true;render();dirty=true;render()");
 assert.equal(saturnDraws,afterViewer+1,'the main chart should reuse one cached ringed marker');
 w.SkySaturn.draw=oldSaturnDraw;
-w.Image=oldImage;w.requestAnimationFrame=oldFrame;w.SkyMoonSurface.draw=oldDraw;
+w.Image=oldImage;w.requestAnimationFrame=oldFrame;w.SkyMoonSurface.draw=oldDraw;w.SkySunSurface.create=oldSunCreate;
 // Main-chart gestures use the same projection as the renderer and retain
 // selected targets after pinching, cancelling or lifting either finger first.
 const sky=w.document.getElementById('sky'),pointer=(pointerId,clientX,clientY)=>({pointerId,clientX,clientY,button:0});

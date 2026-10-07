@@ -1,0 +1,8 @@
+{
+  "source": "https://asc-planetarynames-data.s3.us-west-2.amazonaws.com/MOON_nomenclature_center_pts.kmz",
+  "retrieved": "2026-10-07",
+  "source_sha256": "c2f02e836931daa8af374e90bf69dff91844781e55816b5c3926058612e99409",
+  "coordinate_system": "planetocentric latitude; east-positive longitude normalized to -180..180",
+  "precision": "rounded to two decimal degrees and two decimal km",
+  "feature_count": 40
+}

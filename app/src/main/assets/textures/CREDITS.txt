@@ -47,3 +47,9 @@ https://www.eso.org/public/images/eso0932a/
 https://creativecommons.org/licenses/by/4.0/
 Original 4000x2000 publication JPEG, unchanged. Runtime galactic reprojection
 and brightness/fading; historical long-exposure backdrop, not live visibility.
+
+Lunar detail landmarks: 40 adopted reference centers from the USGS/IAU Gazetteer of Planetary Nomenclature.
+Source: https://planetarynames.wr.usgs.gov/Page/MOON/target
+Snapshot: 2026-10-07; English names, center latitude/longitude and directory diameter.
+Chinese display translations by Starlight; markers are reference centers, not terrain boundaries.
+Detailed provenance and regeneration helper are included in the complete source release.
