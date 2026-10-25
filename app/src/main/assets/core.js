@@ -57,12 +57,19 @@
  // Rebuilt only when horizon coordinates change, never on phone rotation.
  function starIndex(stars){
   const cells=new Map();
+  // A cell's farthest point is a corner of its 15° latitude/longitude box.
+  // Precompute the conservative spherical radius for each latitude band.
+  const radii=Array.from({length:12},(_,row)=>{
+   const center=(row*15-82.5)*D,edge=7.5*D;
+   return Math.max(...[-edge,edge].map(delta=>Math.acos(Math.max(-1,Math.min(1,
+    Math.sin(center)*Math.sin(center+delta)+Math.cos(center)*Math.cos(center+delta)*Math.cos(edge))))))+1e-7;
+  });
   for(let rank=0;rank<stars.length;rank++){
-   const s=stars[rank],v=s.v,lat=Math.asin(Math.max(-1,Math.min(1,v[2])));
-   const lon=Math.atan2(v[0],v[1]),row=Math.min(11,Math.floor((lat/ D+90)/15)),col=Math.min(23,Math.floor((lon/D+180)/15)),key=row*24+col;
+   const s=stars[rank],v=s.v,lat=Number.isFinite(s.alt)?s.alt:Math.asin(Math.max(-1,Math.min(1,v[2])))/D;
+   const lon=Number.isFinite(s.az)?(s.az>180?s.az-360:s.az):Math.atan2(v[0],v[1])/D;
+   const row=Math.max(0,Math.min(11,Math.floor((lat+90)/15))),col=Math.max(0,Math.min(23,Math.floor((lon+180)/15))),key=row*24+col;
    let cell=cells.get(key);
-   if(!cell){cell={center:vec(col*15-172.5,row*15-82.5),radius:0,items:[]};cells.set(key,cell);}
-   cell.radius=Math.max(cell.radius,Math.acos(Math.max(-1,Math.min(1,dot(cell.center,v))))+1e-7);
+   if(!cell){cell={center:vec(col*15-172.5,row*15-82.5),radius:radii[row],items:[]};cells.set(key,cell);}
    cell.items.push({s,rank});
   }
   return {query(b,w,h,fov,limit,padding=24){

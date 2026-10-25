@@ -8,7 +8,7 @@ w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialog
 w.requestAnimationFrame=()=>{};w.cancelAnimationFrame=()=>{};w.setInterval=()=>{};
 Object.defineProperty(w.document,'hidden',{configurable:true,value:false});
 w.matchMedia=()=>({matches:true,addEventListener(){},removeEventListener(){}});
-for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','camera-view.js','pose.js','visual.js','labels.js','grid.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','moon-features-data.js','moon-features.js','saturn-surface.js','sun-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','app.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
+for(const f of ['astronomy.js','iss.js',...fs.readdirSync(root).filter(f=>/^stars-\d+\.js$/.test(f)).sort(),'messier.js','constellations.js','core.js','camera-view.js','pose.js','visual.js','horizon.js','illumination.js','atlas.js','labels.js','grid.js','reminders.js','backup.js','planner.js','art-data.js','art.js','moon-surface.js','moon-features-data.js','moon-features.js','saturn-surface.js','sun-surface.js','deep-photo.js','photo-view.js','milky-way.js','galaxy.js','runtime.js','app.js','reminder-ui.js'])require('node:vm').runInContext(fs.readFileSync(path.join(root,f),'utf8'),dom.getInternalVMContext());
 assert.equal(w.SkyMilky.sprite(0,false),w.SkyMilky.sprite(0,false),'cloud texture is reused during redraw');
 const click=id=>w.document.getElementById(id).click(),body=()=>w.document.getElementById('sheetBody'),text=()=>body().textContent;
 function clickText(t){const b=[...body().querySelectorAll('button')].find(x=>x.textContent===t);assert(b,t);b.click();}
@@ -88,10 +88,10 @@ run("selected={name:'目标',v:SkyMath.vec(70,0),alt:10,az:70};render();");asser
 run('selected.v=SkyMath.vec(0,0);dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('已对准'));assert.equal(w.document.getElementById('guide').hidden,true);
 run('selected.alt=-5;dirty=true;render();');assert(w.document.getElementById('target').textContent.includes('地平线下'));
 run("selected=byId.get('Moon');tracking=false;az=selected.az;alt=selected.alt;dirty=true;render();");assert.equal(run('selected.id'),'Moon');
-run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.nearest(width/2,height/2)===selected'));
+run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6&&s.alt>10);az=selected.az;alt=selected.alt;fov=85;dirty=true;render();');assert(run('hit.nearest(width/2,height/2)===selected'));
 run('cfg.art=true;dirty=true;render()');assert(run('artwork.filter(a=>a.image).length<=12'));run('cfg.art=false;dirty=true;render()');assert.equal(run('artwork.filter(a=>a.image).length'),0);
 run("details(byId.get('Moon'))");clickText('查看月面细节');assert(body().querySelector('canvas.moon-surface'));assert(text().includes('未模拟天平动'));click('close');
-run("let moonDraws=0;Object.defineProperty(moonMap,'complete',{configurable:true,value:true});Object.defineProperty(moonMap,'naturalWidth',{configurable:true,value:2048});SkyMoonSurface.draw=()=>{moonDraws++};tracking=false;az=bodies[1].az;alt=bodies[1].alt;dirty=true;render();dirty=true;render()");
+run("cfg.horizon=false;let moonDraws=0;Object.defineProperty(moonMap,'complete',{configurable:true,value:true});Object.defineProperty(moonMap,'naturalWidth',{configurable:true,value:2048});SkyMoonSurface.draw=()=>{moonDraws++};tracking=false;az=bodies[1].az;alt=bodies[1].alt;dirty=true;render();dirty=true;render()");
 assert.equal(run('moonDraws'),1,'sky-map Moon sprite should reuse a cached phase');
 run('bodies[1].phaseAngle+=4;dirty=true;render()');assert.equal(run('moonDraws'),2,'changed phase should redraw the sprite');
 // Folding the chrome must retain the target, time, field of view and tracking state.

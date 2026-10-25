@@ -6,11 +6,12 @@
   const a=phase*Math.PI/180,sunX=Math.sin(a),sunZ=-Math.cos(a);
   const yaw=(Number.isFinite(view.yaw)?view.yaw:0)*Math.PI/180,pitch=(Number.isFinite(view.pitch)?Math.max(-85,Math.min(85,view.pitch)):0)*Math.PI/180;
   const cy=Math.cos(yaw),sy=Math.sin(yaw),cp=Math.cos(pitch),sp=Math.sin(pitch);
+  const input=view.light,norm=Array.isArray(input)&&input.length===3&&input.every(Number.isFinite)?Math.hypot(...input):0,light=norm>1e-8?input.map(v=>v/norm):null;
   return (x,y)=>{
    x/=zoom;y/=zoom;const rr=x*x+y*y;if(rr>=1)return null;
    const z=Math.sqrt(1-rr),up=-y,by=up*cp+z*sp,z1=z*cp-up*sp,bx=x*cy+z1*sy,bz=z1*cy-x*sy;
    return {u:((.5+Math.atan2(bx,bz)/(2*Math.PI))%1+1)%1,v:.5-Math.asin(Math.max(-1,Math.min(1,by)))/Math.PI,
-    front:z,light:view.inspect?z:Math.max(0,bx*sunX+bz*sunZ),edge:Math.min(1,(1-Math.sqrt(rr))*256)};
+    front:z,light:view.inspect?z:Math.max(0,light?x*light[0]+up*light[1]+z*light[2]:bx*sunX+bz*sunZ),edge:Math.min(1,(1-Math.sqrt(rr))*256)};
   };
  }
  function sample(x,y,phase,view={}){return sampler(phase,view)(x,y);}

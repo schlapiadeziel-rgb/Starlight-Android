@@ -23,4 +23,7 @@ assert.equal(photo.sprite({naturalWidth:Infinity,naturalHeight:100}),null);
 assert.equal(ctx.imageSmoothingEnabled,true);assert.equal(ctx.imageSmoothingQuality,'high');
 assert(photo.size('M42',65)<photo.size('M31',65));
 assert(photo.size('M31',12)>photo.size('M31',85));
+photo.release(galaxy);assert.equal(a.width,0);assert.equal(a.height,0);
+assert.notEqual(photo.sprite(galaxy),a,'released previews are rebuilt when next visible');
+photo.release(nebula);assert.equal(b.width,0);assert.equal(b.height,0);
 console.log('PASS: deep-sky previews retain aspect ratios, upgrade resolution in one bounded cache, never upscale sources, and retain display-size bounds.');

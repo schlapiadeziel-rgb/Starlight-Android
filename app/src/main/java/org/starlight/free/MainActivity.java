@@ -14,6 +14,7 @@ import android.content.Intent;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import org.json.JSONObject;
 
 public class MainActivity extends Activity implements SensorEventListener, LocationListener {
     private WebView web;
@@ -23,6 +24,8 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     private IssManager iss;
     private boolean cameraWanted=false, resumed=false;
     private String pendingExport;
+    private JSONObject pendingReminder;
+    private int reminderToken;
     private final float[] screenMatrix=new float[9];
     private SensorManager sensors;
     private LocationManager locations;
@@ -41,6 +44,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         updater=new UpdateManager(this,this::js);
         weather=new WeatherManager(this::js);
         iss=new IssManager(this::js);
+        ReminderManager.restore(this);
         web=new WebView(this);
         web.setBackgroundColor(android.graphics.Color.TRANSPARENT);
         web.getSettings().setJavaScriptEnabled(true);
@@ -62,7 +66,7 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
                 return new WebResourceResponse("text/plain","UTF-8",null);
             }
             @Override public boolean shouldOverrideUrlLoading(WebView v, WebResourceRequest r) {return true;}
-            @Override public void onPageFinished(WebView v,String url){ready=true;js("nativeReady()");}
+            @Override public void onPageFinished(WebView v,String url){ready=true;js("nativeReady()");openReminderIntent();}
         });
         FrameLayout root=new FrameLayout(this);
         root.setBackgroundColor(0xff070d19);
@@ -80,6 +84,10 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         web.loadUrl("https://app.starlight.local/");
     }
     private void js(String code){runOnUiThread(()->{if(ready) web.evaluateJavascript(code,null);});}
+    private void reminderResult(int token,boolean ok,String message){js("nativeReminderResult("+token+","+ok+","+JSONObject.quote(message)+")");}
+    private void saveReminder(JSONObject record,int token){try{ReminderManager.add(this,record);reminderResult(token,true,"提醒已保存，系统可能延后通知");}catch(IllegalArgumentException|IllegalStateException e){reminderResult(token,false,e.getMessage());}catch(Exception e){reminderResult(token,false,"提醒保存失败，请重试");}}
+    private void openReminderIntent(){if(!ready||!getIntent().hasExtra("reminder_id"))return;int id=getIntent().getIntExtra("reminder_id",-1);getIntent().removeExtra("reminder_id");JSONObject j=ReminderManager.find(this,id);if(j!=null)js("nativeOpenReminder("+JSONObject.quote(j.toString())+")");else js("toast('这条提醒已删除')");}
+    @Override protected void onNewIntent(Intent i){super.onNewIntent(i);setIntent(i);openReminderIntent();}
     public class Bridge {
         @JavascriptInterface public void track(boolean enabled){runOnUiThread(()->{
             tracking=enabled; lastFrame=0; sensors.unregisterListener(MainActivity.this);
@@ -121,6 +129,13 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
         @JavascriptInterface public boolean hasVerifiedUpdate(){return updater.hasVerifiedUpdate();}
         @JavascriptInterface public void fetchWeather(double lat,double lon){weather.fetch(lat,lon);}
         @JavascriptInterface public void fetchIss(){iss.fetch();}
+        @JavascriptInterface public String getReminders(){return ReminderManager.snapshot(MainActivity.this);}
+        @JavascriptInterface public void scheduleReminder(String data,int token){runOnUiThread(()->{if(pendingReminder!=null){reminderResult(token,false,"请先完成通知授权");return;}try{
+            JSONObject j=ReminderManager.validate(data);ReminderPolicy.future(j.getLong("time"),j.getInt("lead"),System.currentTimeMillis());
+            if(android.os.Build.VERSION.SDK_INT>=33&&checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS)!=PackageManager.PERMISSION_GRANTED){pendingReminder=j;reminderToken=token;requestPermissions(new String[]{Manifest.permission.POST_NOTIFICATIONS},9);}else saveReminder(j,token);
+        }catch(Exception e){pendingReminder=null;reminderResult(token,false,e instanceof IllegalArgumentException?e.getMessage():"提醒资料或系统授权无效");}});}
+        @JavascriptInterface public void cancelReminder(int id){runOnUiThread(()->{try{ReminderManager.remove(MainActivity.this,id);js("nativeRemindersChanged();toast('提醒已删除')");}catch(Exception e){js("toast('删除失败，请重试')");}});}
+        @JavascriptInterface public void openReminderSettings(){runOnUiThread(()->{try{ReminderManager.channel(MainActivity.this);startActivity(new Intent(android.provider.Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).putExtra(android.provider.Settings.EXTRA_APP_PACKAGE,getPackageName()).putExtra(android.provider.Settings.EXTRA_CHANNEL_ID,ReminderManager.CHANNEL));}catch(Exception e){js("toast('请在系统设置中打开星野的通知')");}});}
         @JavascriptInterface public void setCoordinates(double lat,double lon){
             if(Double.isNaN(lat)||Double.isNaN(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return;
             declination=new GeomagneticField((float)lat,(float)lon,0,System.currentTimeMillis()).getDeclination();
@@ -142,7 +157,8 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
     }
     @Override public void onRequestPermissionsResult(int r,String[] p,int[] g){
         super.onRequestPermissionsResult(r,p,g);
-        if(r==6){
+        if(r==9){JSONObject j=pendingReminder;int token=reminderToken;pendingReminder=null;if(j!=null){if(g.length>0&&g[0]==PackageManager.PERMISSION_GRANTED)saveReminder(j,token);else reminderResult(token,false,"通知未授权，没有创建提醒；可在系统通知设置中开启");}}
+        else if(r==6){
             if(g.length>0&&g[0]==PackageManager.PERMISSION_GRANTED&&cameraWanted){if(resumed)skyCamera.start();}
             else{cameraWanted=false;js("nativeCameraStopped(\"未获得相机权限，可继续使用离线星图\")");}
         }else if(r==5){
@@ -201,6 +217,6 @@ public class MainActivity extends Activity implements SensorEventListener, Locat
             skyCamera.start();
         }
     }
-    @Override protected void onResume(){super.onResume();resumed=true;if(cameraWanted&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)skyCamera.start();if(web!=null){web.onResume();web.resumeTimers();js("nativeAppResumed()");}if(tracking)new Bridge().track(true);}
+    @Override protected void onResume(){super.onResume();resumed=true;if(cameraWanted&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED)skyCamera.start();if(web!=null){web.onResume();web.resumeTimers();js("nativeAppResumed()");js("nativeRemindersChanged()");}if(tracking)new Bridge().track(true);}
     @Override protected void onDestroy(){skyCamera.stop();sensors.unregisterListener(this);locations.removeUpdates(this);web.destroy();super.onDestroy();}
 }

@@ -53,3 +53,13 @@ Source: https://planetarynames.wr.usgs.gov/Page/MOON/target
 Snapshot: 2026-10-07; English names, center latitude/longitude and directory diameter.
 Chinese display translations by Starlight; markers are reference centers, not terrain boundaries.
 Detailed provenance and regeneration helper are included in the complete source release.
+
+Mercury, Venus atmosphere, Mars, Uranus and Neptune textures: Solar System Scope / INOVE.
+License: CC BY 4.0, https://creativecommons.org/licenses/by/4.0/
+Source and original 2048x1024 maps: https://www.solarsystemscope.com/textures/
+Retrieved 2026-10-13. The original JPEG bytes are distributed unchanged.
+Per-image direct URLs, dimensions and SHA256 hashes: licenses/planet-textures-source.json in source release.
+The provider adjusts color saturation and fills some unmapped regions with illustrative terrain.
+Venus shows atmospheric clouds, not the hidden surface. These are static browsing illustrations,
+not live images or date-dependent viewing orientations. Starlight adds spherical projection
+and illustrative inspection lighting at runtime. No provider affiliation or endorsement.

@@ -1,0 +1,53 @@
+{
+  "author": "Solar System Scope / INOVE",
+  "license": "CC BY 4.0",
+  "page": "https://www.solarsystemscope.com/textures/",
+  "retrieved": "2026-10-13",
+  "textures": [
+    {
+      "body": "Mercury",
+      "file": "textures/mercury.jpg",
+      "source": "https://www.solarsystemscope.com/textures/download/2k_mercury.jpg",
+      "width": 2048,
+      "height": 1024,
+      "size": 872555,
+      "sha256": "5a5c80607f643496bac9a631e71957def35ed788895f18b678ac849c2b38e48a"
+    },
+    {
+      "body": "Venus",
+      "file": "textures/venus.jpg",
+      "source": "https://www.solarsystemscope.com/textures/download/2k_venus_atmosphere.jpg",
+      "width": 2048,
+      "height": 1024,
+      "size": 229696,
+      "sha256": "225012ad4911730605c4e189ca2a3bf674fce50cc48aab4102b936b47d6991ac"
+    },
+    {
+      "body": "Mars",
+      "file": "textures/mars.jpg",
+      "source": "https://www.solarsystemscope.com/textures/download/2k_mars.jpg",
+      "width": 2048,
+      "height": 1024,
+      "size": 750547,
+      "sha256": "2d187f3e77a98eaa8cea5f4cc722f633c122ef170b9e94ace6b5fb6cbc3f8e01"
+    },
+    {
+      "body": "Uranus",
+      "file": "textures/uranus.jpg",
+      "source": "https://www.solarsystemscope.com/textures/download/2k_uranus.jpg",
+      "width": 2048,
+      "height": 1024,
+      "size": 77751,
+      "sha256": "d15239d46f82d3ea13d2b260b5b29b2a382f42f2916dae0694d0387b1204a09d"
+    },
+    {
+      "body": "Neptune",
+      "file": "textures/neptune.jpg",
+      "source": "https://www.solarsystemscope.com/textures/download/2k_neptune.jpg",
+      "width": 2048,
+      "height": 1024,
+      "size": 241580,
+      "sha256": "cb42ea82709741d28b0af44d8b283cbc6dbd0c521a7f0e1e1e010ade00977df6"
+    }
+  ]
+}

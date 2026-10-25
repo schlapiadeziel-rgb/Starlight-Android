@@ -22,5 +22,9 @@
   const base=Math.max(52,Math.min(170,2800/Math.max(12,fov)));
   return id==='M42'?(selected?base*.75:base*.60):(selected?Math.max(base,94):base);
  }
- const api={sprite,size};root.SkyDeepPhoto=api;if(typeof module!=='undefined')module.exports=api;
+ function release(image){
+  const entry=cache.get(image);if(!entry)return;
+  entry.canvas.width=entry.canvas.height=0;cache.delete(image);
+ }
+ const api={sprite,size,release};root.SkyDeepPhoto=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

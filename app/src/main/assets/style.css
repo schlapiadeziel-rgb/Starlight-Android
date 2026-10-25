@@ -87,3 +87,13 @@ dialog.surface-sheet.surface-immersive{overflow:hidden;padding:8px 12px}
 .deep-viewport img{position:absolute;left:0;top:0;max-width:none;max-height:none;pointer-events:none;user-select:none;will-change:transform}
 
 #heading #galaxyCredit{font-size:10px;color:#bdc8d6;text-shadow:0 1px 3px #000;letter-spacing:0}#galaxyCredit[hidden]{display:none}
+
+/* Vector controls remain legible when a device font lacks astronomy glyphs. */
+.ui-icon{display:inline-block;width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;vertical-align:middle;pointer-events:none}
+.tools button{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+nav button span{display:flex;align-items:center;justify-content:center}
+
+.planet-atlas{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}.planet-card{display:flex;flex-direction:column;align-items:center;gap:5px;padding:12px 6px;border-radius:16px;background:linear-gradient(145deg,#16243a,#080f1b);min-width:0}.planet-card b{font-size:15px;font-weight:500}.planet-card small{font-size:10px;color:var(--muted)}canvas.planet-thumb{width:88px;height:88px;background:transparent;touch-action:auto}.atlas-status{font-size:9px;color:#c5d4e7}.atlas-error{color:#ffc28d}.surface-dock{gap:8px}.surface-step{min-width:44px;min-height:44px;border-radius:24px;padding:0 14px;background:#111b2ee8;font-size:25px}.surface-panel .secondary{min-height:40px}
+@media(max-width:420px){.planet-atlas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+#reminderLead{width:100%;min-height:46px;background:#080f20;color:var(--ink);border:1px solid #ffffff25;border-radius:12px;padding:10px 12px;margin:6px 0 13px;font:inherit}button:disabled{opacity:.5;cursor:default}button:disabled:active{transform:none}
