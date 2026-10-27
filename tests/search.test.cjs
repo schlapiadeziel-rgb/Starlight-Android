@@ -1,0 +1,12 @@
+const assert=require('node:assert/strict'),S=require('../app/src/main/assets/search.js');
+const star={name:'天狼星',en:'Sirius',hip:32349,con:'CMa'},m3={name:'M3',en:'Messier 3',deepSky:true,designation:'M3',ngc:5272},m31={name:'仙女座星系',en:'Andromeda Galaxy',deepSky:true,designation:'M31',ngc:224},con={name:'仙女座',en:'Andromeda',constellation:true,abbr:'And'};
+const catalog=[star,m3,m31,con],search=S.create(catalog);
+for(const query of ['HIP32349','hip 32349','ＨＩＰ　３２３４９','HIP-032349'])assert.deepEqual(search.query(query),[star]);
+for(const query of ['M31','m 31','Ｍ３１','M-031','NGC224','ngc 224','NGC-0224'])assert.deepEqual(search.query(query),[m31]);
+assert.deepEqual(search.query('M3'),[m3],'exact identifiers must not also match M31');
+assert.deepEqual(search.query('仙女'),[m31,con]);assert.deepEqual(search.query('sIrIuS'),[star]);
+assert.deepEqual(search.query('andromeda galaxy'),[m31]);assert.deepEqual(search.query('CMa'),[star]);
+for(const query of ['', '  ', 'HIP0','M999','undefined','NGCundefined'])assert.deepEqual(search.query(query),[]);
+const result=search.query('M31');result.length=0;assert.deepEqual(search.query('M31'),[m31],'callers cannot mutate the cached identifier list');
+let reads=0;const measured={get name(){reads++;return '月亮';},en:'Moon'};const cached=S.create([measured]);const initial=reads;for(let i=0;i<100;i++)assert.equal(cached.query('月亮')[0],measured);assert.equal(reads,initial,'queries reuse normalized names');
+console.log('PASS: exact HIP/M/NGC identifiers, whitespace, full-width text, leading zeroes, names, order, missing IDs and cached normalization.');
