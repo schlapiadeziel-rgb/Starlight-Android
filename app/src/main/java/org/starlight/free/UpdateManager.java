@@ -81,7 +81,7 @@ final class UpdateManager {
                         if(name.matches("Starlight-[A-Za-z0-9._-]+\\.apk")&&url.startsWith(DOWNLOAD_PREFIX+tag+"/")&&digest.matches("sha256:[0-9a-f]{64}")&&size>0&&size<=MAX_BYTES){best=new UpdateInfo(tag,url,digest.substring(7),size);bestVersion=next;break;}
                     }
                 }
-                if(best==null||available==null||!best.version.equals(available.version))verifiedApk=null;
+                if(best==null||available==null||!best.version.equals(available.version)||!best.url.equals(available.url)||!best.digest.equals(available.digest)||best.size!=available.size)verifiedApk=null;
                 available=best;
                 if(best==null)say("nativeUpdateCurrent",current.versionName);
                 else say("nativeUpdateAvailable",current.versionName,best.version,String.valueOf(best.size));
@@ -95,6 +95,7 @@ final class UpdateManager {
         if(!busy.compareAndSet(false,true)){say("nativeUpdateError","当前操作尚未结束");return;}
         new Thread(()->{
             File directory=new File(activity.getCacheDir(),"updates"),temp=new File(directory,"starlight-update.partial.apk"),apk=new File(directory,"starlight-update.apk");
+            verifiedApk=null;
             try{
                 if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("cache unavailable");
                 MessageDigest sha=MessageDigest.getInstance("SHA-256");long count=0;int lastPercent=-1;
@@ -116,6 +117,7 @@ final class UpdateManager {
         },"starlight-update-download").start();
     }
     void install(){
+        if(busy.get()){say("nativeUpdateError","当前操作尚未结束");return;}
         File file=verifiedApk;
         if(file==null||!file.isFile()){say("nativeUpdateError","请先下载并校验安装包");return;}
         try{
@@ -130,5 +132,5 @@ final class UpdateManager {
             activity.startActivity(intent);
         }catch(Exception e){say("nativeUpdateError","无法打开系统安装界面，可从 GitHub 发布页手动安装");}
     }
-    boolean hasVerifiedUpdate(){return verifiedApk!=null&&verifiedApk.isFile();}
+    boolean hasVerifiedUpdate(){return !busy.get()&&verifiedApk!=null&&verifiedApk.isFile();}
 }

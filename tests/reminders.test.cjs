@@ -7,6 +7,7 @@ for(const date of ['2026-02-30T12:00','2026-13-02T12:00','2026-01-02',''])assert
 assert.equal(R.localInput(R.parseInput('2026-10-14T12:30')),'2026-10-14T12:30');assert.equal(R.snapshot('garbage'),null);
 const records=[{...base,id:1,state:1},{...base,id:2,state:0},{...base,id:3,state:3},{...base,id:4,state:99}];assert.deepEqual(R.snapshot({enabled:true,items:records}).items.map(x=>x.id),[2,1,3]);
 const root=path.resolve(__dirname,'../app/src/main/assets'),dom=new JSDOM(fs.readFileSync(path.join(root,'index.html'),'utf8'),{url:'https://app.starlight.local/',runScripts:'outside-only'}),w=dom.window;
+w.Date.now=()=>now;
 w.requestAnimationFrame=()=>1;w.cancelAnimationFrame=()=>{};w.setInterval=()=>{};w.HTMLDialogElement.prototype.showModal=function(){this.open=true;};w.HTMLDialogElement.prototype.close=function(){this.open=false;};
 w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=>({addColorStop(){}}),createRadialGradient:()=>({addColorStop(){}}),measureText:t=>({width:t.length*10})},{get:(o,k)=>k in o?o[k]:()=>{}});
 for(const script of w.document.querySelectorAll('script[src]'))vm.runInContext(fs.readFileSync(path.join(root,script.getAttribute('src')),'utf8'),dom.getInternalVMContext());

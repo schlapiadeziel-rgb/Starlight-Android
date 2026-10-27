@@ -9,7 +9,9 @@ w.HTMLCanvasElement.prototype.getContext=()=>new Proxy({createLinearGradient:()=
 const preference={matches:false,listeners:new Set(),addEventListener(_,fn){this.listeners.add(fn);},removeEventListener(_,fn){this.listeners.delete(fn);}};w.matchMedia=()=>preference;
 w.IntersectionObserver=class {constructor(fn){observer=this;this.callback=fn;}observe(){}disconnect(){this.disconnected=true;}};
 for(const script of w.document.querySelectorAll('script[src]'))vm.runInContext(fs.readFileSync(path.join(root,script.getAttribute('src')),'utf8'),dom.getInternalVMContext());
-frames.clear(); // The chart loop is outside this focused viewer lifecycle test.
+// Isolate the viewer from the chart's real timers and demand-driven frames.
+vm.runInContext('skyRuntime.dispose();skyRuntime={request(){},reschedule(){},pause(){},resume(){}}',dom.getInternalVMContext());
+frames.clear();
 let latestImage,autoLoad=true,projections=0,loop,lastView;
 w.Image=class {constructor(){latestImage=this;}set src(value){this.source=value;if(value&&autoLoad)this.onload?.();}};
 w.SkyMoonSurface.draw=(_,__,___,view)=>{projections++;lastView={...view};};
