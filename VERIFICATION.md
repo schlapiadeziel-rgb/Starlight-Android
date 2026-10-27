@@ -1,4 +1,4 @@
-# Starlight 0.3.41 verification — 2026-10-24
+# Starlight 0.3.42 verification — 2026-10-24
 
 Implemented demand-driven chart invalidation, coalesced/throttled frames,
 one maintenance deadline for astronomy/clock/ISS, lifecycle cancellation,
@@ -30,7 +30,7 @@ Passed:
 - Direct SDK build with Temurin JDK 17.0.21+9, Android SDK 35 / Build Tools
   35.0.0: AAPT2, javac, D8, zipalign and apksigner succeed. Gradle and GitHub
   workflow were not executed here.
-- APK org.starlight.free, 0.3.41 / 49, minimum API 26, target API 35; v2 and v3
+- APK org.starlight.free, 0.3.42 / 49, minimum API 26, target API 35; v2 and v3
   verification pass with original certificate SHA256:
   3EA20712AB847EE5E2247CD5D4673BFA5A5467071A654E5E6066DA42A4867558.
 - All 151 offline assets match packaged APK bytes, including runtime.js and

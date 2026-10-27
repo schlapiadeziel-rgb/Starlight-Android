@@ -63,6 +63,7 @@ final class UpdateManager {
     void check(){
         if(!busy.compareAndSet(false,true)){say("nativeUpdateError","当前操作尚未结束");return;}
         new Thread(()->{
+            String notice;String[] args;
             try{
                 PackageInfo current=activity.getPackageManager().getPackageInfo(activity.getPackageName(),0);
                 int[] currentVersion=version(current.versionName);
@@ -83,19 +84,21 @@ final class UpdateManager {
                 }
                 if(best==null||available==null||!best.version.equals(available.version)||!best.url.equals(available.url)||!best.digest.equals(available.digest)||best.size!=available.size)verifiedApk=null;
                 available=best;
-                if(best==null)say("nativeUpdateCurrent",current.versionName);
-                else say("nativeUpdateAvailable",current.versionName,best.version,String.valueOf(best.size));
-            }catch(Exception e){say("nativeUpdateError","无法检查更新，请确认网络可访问 GitHub 后重试");}
+                if(best==null){notice="nativeUpdateCurrent";args=new String[]{current.versionName};}
+                else{notice="nativeUpdateAvailable";args=new String[]{current.versionName,best.version,String.valueOf(best.size)};}
+            }catch(Exception e){notice="nativeUpdateError";args=new String[]{"无法检查更新，请确认网络可访问 GitHub 后重试"};}
             finally{busy.set(false);}
+            say(notice,args);
         },"starlight-update-check").start();
     }
     void download(){
-        UpdateInfo info=available;
-        if(info==null){say("nativeUpdateError","请先检查更新");return;}
         if(!busy.compareAndSet(false,true)){say("nativeUpdateError","当前操作尚未结束");return;}
+        UpdateInfo info=available;
+        if(info==null){busy.set(false);say("nativeUpdateError","请先检查更新");return;}
         new Thread(()->{
             File directory=new File(activity.getCacheDir(),"updates"),temp=new File(directory,"starlight-update.partial.apk"),apk=new File(directory,"starlight-update.apk");
             verifiedApk=null;
+            String notice;String[] args;
             try{
                 if(!directory.isDirectory()&&!directory.mkdirs())throw new IOException("cache unavailable");
                 MessageDigest sha=MessageDigest.getInstance("SHA-256");long count=0;int lastPercent=-1;
@@ -111,9 +114,10 @@ final class UpdateManager {
                 if(candidate==null||!activity.getPackageName().equals(candidate.packageName)||candidate.versionCode<=installed.versionCode||candidate.signatures==null||installed.signatures==null||candidate.signatures.length!=1||installed.signatures.length!=1||!MessageDigest.isEqual(candidate.signatures[0].toByteArray(),installed.signatures[0].toByteArray()))throw new IOException("package or signing certificate mismatch");
                 if(apk.exists()&&!apk.delete())throw new IOException("old download unavailable");
                 if(!temp.renameTo(apk))throw new IOException("cache move failed");
-                verifiedApk=apk;say("nativeUpdateReady",info.version);
-            }catch(Exception e){temp.delete();say("nativeUpdateError","下载或校验失败，请稍后重试；不会安装未经验证的文件");}
+                verifiedApk=apk;notice="nativeUpdateReady";args=new String[]{info.version};
+            }catch(Exception e){temp.delete();notice="nativeUpdateError";args=new String[]{"下载或校验失败，请稍后重试；不会安装未经验证的文件"};}
             finally{busy.set(false);}
+            say(notice,args);
         },"starlight-update-download").start();
     }
     void install(){
