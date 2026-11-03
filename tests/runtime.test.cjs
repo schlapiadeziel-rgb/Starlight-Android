@@ -11,4 +11,6 @@ const stale=[...c.jobs.values()].map(x=>x.fn),before=[draws,ticks];loop.pause();
 loop.resume();c.advance(16);assert.equal(ticks,before[1]+1);assert.equal(draws,before[0]+1);loop.dispose();loop.resume();loop.request();assert.equal(c.jobs.size,0);
 // Monotonic frame timing is independent of changes to the wall clock.
 const d=clock();let wall=50000,count=0;const rewind=Runtime.create({...d,now:()=>wall,frameNow:d.now,draw:()=>count++,tick(){},deadline:()=>wall+30000});rewind.resume();d.advance(16);wall-=100000;rewind.request();d.advance(48);assert.equal(count,2);rewind.dispose();
+const fastClock=clock();let fastDraws=0;const fast=Runtime.create({...fastClock,frameNow:fastClock.now,frameBudget:()=>16,draw:()=>fastDraws++,tick(){},deadline:()=>1e15});
+fast.resume();for(let i=0;i<60;i++){fast.request();fastClock.advance(1000/60);}assert(fastDraws>=36&&fastDraws<=62,'a 16ms budget draws more often than the 32ms cap');fast.dispose();
 console.log('PASS: 10000 invalidations coalesce, zero extra idle frames, single deadline, bounded 60Hz input, pause/stale callbacks, resume/disposal and wall-clock rollback.');

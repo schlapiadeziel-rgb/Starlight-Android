@@ -7,16 +7,17 @@
    later=options.setTimer||((fn,ms)=>root.setTimeout(fn,ms)),clear=options.clearTimer||((id)=>root.clearTimeout(id));
   let paused=true,disposed=false,frame=null,throttle=null,wake=null,lastDraw=-Infinity;
   function cancel(task,fn){if(task&&task.id!=null)fn(task.id);}
+  function budget(){const value=options.frameBudget?options.frameBudget():options.frameMs;return value>0?value:32;}
   function enqueue(){
    if(paused||disposed||frame)return;
    const task={id:null};frame=task;
-   task.id=raf(()=>{if(frame!==task||paused||disposed)return;frame=null;if(frameClock()-lastDraw<(options.frameMs||32)){request();return;}lastDraw=frameClock();options.draw();});
+   task.id=raf(()=>{if(frame!==task||paused||disposed)return;frame=null;if(frameClock()-lastDraw<budget()){request();return;}lastDraw=frameClock();options.draw();});
   }
   function request(){
    if(paused||disposed||frame||throttle)return;
    // Request slightly before the budget expires; the frame callback checks
    // the actual clock. Waiting a full budget and then another vsync adds lag.
-   const delay=(options.frameMs||32)-(frameClock()-lastDraw)-Math.min(16,(options.frameMs||32)/2);
+   const frameBudget=budget(),delay=frameBudget-(frameClock()-lastDraw)-Math.min(16,frameBudget/2);
    if(delay<=0){enqueue();return;}
    const task={id:null};throttle=task;
    task.id=later(()=>{if(throttle!==task||paused||disposed)return;throttle=null;enqueue();},delay);
