@@ -22,4 +22,8 @@ assert.equal(L.layout([{...candidate('too-wide',100,100),width:1000}],320,480).l
 assert.equal(L.layout([candidate('invalid',NaN,100)],320,480).length,0);
 assert.equal(L.layout([candidate('same',150,150),candidate('same',250,250)],320,480).length,1);
 assert.deepEqual(L.layout(crowded,320,480),L.layout(crowded,320,480));
+assert.equal(L.showStarName(.5,90,false),true);assert.equal(L.showStarName(1.4,90,false),false);assert.equal(L.showStarName(1.4,90,true),true);
+assert.equal(L.showStarName(2,30,false),true);assert.equal(L.showStarName(2.4,30,false),false);assert.equal(L.showStarName(2.4,20,false),true);assert.equal(L.showConstellationName(4,90),false);assert.equal(L.showConstellationName(14,90),true);assert.equal(L.showConstellationName(4,30),true);
+assert.equal(L.showDeepSkyName(80,false),false);assert.equal(L.showDeepSkyName(40,false),true);assert.equal(L.showDeepSkyName(80,true),true);
+assert.equal(L.starMagnitudeLimit(NaN),1.7);
 console.log('PASS: label priority, collision avoidance, HUD exclusion, edge placement and deterministic layout.');
