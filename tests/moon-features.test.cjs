@@ -29,4 +29,11 @@ assert(placed.some(p=>p.id==='moon'+near.id),'selected feature gets first choice
 for(let i=0;i<placed.length;i++)for(let j=i+1;j<placed.length;j++){
  const a=placed[i].box,b=placed[j].box;assert(!(a.left<b.right&&a.right>b.left&&a.top<b.bottom&&a.bottom>b.top));
 }
+const small={feature:data.find(f=>f.en==='Kepler')},huge={feature:data.find(f=>f.en==='Mare Imbrium')};
+assert.equal(Features.showName(small,1,false),false);assert.equal(Features.showName(small,1,true),true);assert.equal(Features.showName(small,2.4,false),true);
+assert.equal(Features.showName(huge,1,false),true);assert.equal(Features.showName(null,1,false),false);
+let namedIds=[];
+const withSmall=[...visible,{feature:small.feature,x:30,y:30,front:1,light:1}];
+Features.draw(target.getContext('2d'),withSmall,320,320,near.id,{layout(candidates){namedIds=candidates.map(c=>c.id);return Labels.layout(...arguments);}},1);
+assert(namedIds.includes('moon'+near.id));assert(!namedIds.includes('moon'+small.feature.id),'default zoom omits a small crater name');
 console.log(`PASS: 40 official directory centers, ${comparisons} inverse texture/marker comparisons, far-side and dark-side hiding, centering, bounded picking and selected label collision avoidance.`);

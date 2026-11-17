@@ -31,3 +31,20 @@ const sunTarget={width:8,getContext(){return {createImageData(w,h){return {data:
 M.draw(sunTarget,image,0,{emissive:true,glow:false});const darkPhase=Array.from(sunPixels);
 M.draw(sunTarget,image,180,{emissive:true,glow:false});assert.deepEqual(Array.from(sunPixels),darkPhase);
 assert(sunPixels[(4*8+4)*4]>150);
+// Alternating source columns must average when the disc is smaller than the texture,
+// instead of picking a single stripe. A uniform field stays uniform after the same filter.
+let bound=null;
+global.document={createElement(){return {width:1,height:1,getContext(){return {drawImage(img){bound=img;},getImageData(){return {data:bound.pixels};}}}}}};
+function paint(pixels,width,height,size,phase,view){
+ const ctx={createImageData(w,h){return {data:new Uint8ClampedArray(w*h*4)}},putImageData(out){this.last=out;}};
+ M.draw({width:size,getContext:()=>ctx},{width,height,pixels},phase,view);return ctx.last.data;
+}
+const stripes=new Uint8ClampedArray(64*32*4);
+for(let y=0;y<32;y++)for(let x=0;x<64;x++){const i=(y*64+x)*4,v=x%2?255:0;stripes[i]=stripes[i+1]=stripes[i+2]=v;stripes[i+3]=255;}
+const down=paint(stripes,64,32,8,180);const center=(4*8+4)*4;
+assert(down[center]>90&&down[center]<170,'minified high-frequency albedo averages instead of aliasing');
+const flat=new Uint8ClampedArray(64*32*4).fill(180);flat.forEach((_,i)=>{if(i%4===3)flat[i]=255;});
+const even=paint(flat,64,32,8,180);assert(Math.abs(even[center]-even[center+1])<1);assert(Math.abs(even[center]-down[center])>5);
+const quarter=paint(flat,64,32,32,90),right=(16*32+24)*4,left=(16*32+8)*4;
+assert(quarter[right]>quarter[left]*5,'first-quarter lit limb stays brighter than the dark limb');
+assert(quarter[left]<30,'unlit limb keeps only a faint earthshine floor');

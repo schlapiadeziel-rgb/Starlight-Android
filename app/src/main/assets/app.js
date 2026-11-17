@@ -171,7 +171,7 @@ function render(){
  const skyLabels=[],symbolBoxes=[];
  function label(id,name,q,radius,size,color,priority,alpha=1,extra={}){
   if(!q||q[0]<0||q[0]>width||q[1]<0||q[1]>height)return;
-  ctx.font=size+'px system-ui';skyLabels.push({id,name,x:q[0],y:q[1],radius,size,color,priority,alpha,width:ctx.measureText(name).width,...extra});
+  ctx.font='500 '+size+'px system-ui';skyLabels.push({id,name,x:q[0],y:q[1],radius,size,color,priority,alpha,width:ctx.measureText(name).width,...extra});
  }
  function symbol(q,radius){symbolBoxes.push({left:q[0]-radius-2,right:q[0]+radius+2,top:q[1]-radius-2,bottom:q[1]+radius+2});}
 
@@ -201,21 +201,21 @@ function render(){
   const grid=SkyGrid.project(coordinateGrid.get(fov,basis,equatorialRotation),p,width,height);
   for(const line of grid){const reference=line.reference,color=reference==='ecliptic'?'#efcb72':reference==='equator'?'#ec7e88':reference==='meridian'?'#96dfb3':bright?'#edfaff':'#b5c5db';ctx.strokeStyle=reference?color+(bright?'d9':'b0'):bright?'#e8f5ff4a':'#a9bdd94a';ctx.lineWidth=reference?1.1:.65;ctx.setLineDash(reference?[8,5]:[]);ctx.beginPath();
    for(const [x,y,endX,endY] of line.segments){ctx.moveTo(x,y);ctx.lineTo(endX,endY);}ctx.stroke();
-   if(line.alternatives.length){const anchor=line.alternatives[0];label('grid'+line.id,line.name,[anchor.x,anchor.y],0,11,color,reference?12:5,1,{inline:true,alternatives:line.alternatives});}
+   if(line.alternatives.length){const anchor=line.alternatives[0];label('grid'+line.id,line.name,[anchor.x,anchor.y],0,10,color,reference?12:5,reference?.88:.62,{inline:true,alternatives:line.alternatives});}
   }
   ctx.setLineDash([]);
-  ctx.strokeStyle=bright?'#d4fffa90':'#8ee4d48c';ctx.fillStyle=bright?'#effff8':'#b5eee7';for(const angle of [10,20,30]){if(angle>fov*.75)continue;ctx.beginPath();for(let i=0;i<=96;i++){const t=i*2*Math.PI/96,a=angle*D,v=[Math.cos(a)*basis.f[0]+Math.sin(a)*(Math.cos(t)*basis.r[0]+Math.sin(t)*basis.u[0]),Math.cos(a)*basis.f[1]+Math.sin(a)*(Math.cos(t)*basis.r[1]+Math.sin(t)*basis.u[1]),Math.cos(a)*basis.f[2]+Math.sin(a)*(Math.cos(t)*basis.r[2]+Math.sin(t)*basis.u[2])],q=p(v);if(q){if(i===0)ctx.moveTo(...q);else ctx.lineTo(...q);}}ctx.stroke();const up=p([Math.cos(angle*D)*basis.f[0]+Math.sin(angle*D)*basis.u[0],Math.cos(angle*D)*basis.f[1]+Math.sin(angle*D)*basis.u[1],Math.cos(angle*D)*basis.f[2]+Math.sin(angle*D)*basis.u[2]]);label('ring'+angle,angle+'°',up,2,10,bright?'#effff8':'#b5eee7',5);}}
+  ctx.strokeStyle=bright?'#d4fffa90':'#8ee4d48c';ctx.fillStyle=bright?'#effff8':'#b5eee7';for(const angle of [10,20,30]){if(angle>fov*.75)continue;ctx.beginPath();for(let i=0;i<=96;i++){const t=i*2*Math.PI/96,a=angle*D,v=[Math.cos(a)*basis.f[0]+Math.sin(a)*(Math.cos(t)*basis.r[0]+Math.sin(t)*basis.u[0]),Math.cos(a)*basis.f[1]+Math.sin(a)*(Math.cos(t)*basis.r[1]+Math.sin(t)*basis.u[1]),Math.cos(a)*basis.f[2]+Math.sin(a)*(Math.cos(t)*basis.r[2]+Math.sin(t)*basis.u[2])],q=p(v);if(q){if(i===0)ctx.moveTo(...q);else ctx.lineTo(...q);}}ctx.stroke();const up=p([Math.cos(angle*D)*basis.f[0]+Math.sin(angle*D)*basis.u[0],Math.cos(angle*D)*basis.f[1]+Math.sin(angle*D)*basis.u[1],Math.cos(angle*D)*basis.f[2]+Math.sin(angle*D)*basis.u[2]]);label('ring'+angle,angle+'°',up,2,9,bright?'#effff8cc':'#b5eee7b8',5,.72);}}
  // Horizon and altitude circles are actual horizontal coordinates.
  for(let h=0;h<=(showGrid?60:0);h+=30){ctx.strokeStyle=h===0?(bright?'#effcff75':'#a9d5c055'):(bright?'#eefaff28':'#9abbe410');ctx.lineWidth=1;ctx.beginPath();let prev=null;for(let a=0;a<=360;a+=2){let q=p(M.vec(a,h));if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width/3)ctx.lineTo(...q);else if(q)ctx.moveTo(...q);prev=q;}ctx.stroke();}
- ctx.font='11px system-ui';ctx.textAlign='center';ctx.fillStyle=bright?'#e8f4ff':'#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>label('cardinal'+i,n,p(M.vec(i*90,0)),4,11,bright?'#e8f4ff':'#93b7ac',35));
+ ctx.font='500 10px system-ui';ctx.textAlign='center';ctx.fillStyle=bright?'#e8f4ff':'#93b7ac';['北 N','东 E','南 S','西 W'].forEach((n,i)=>label('cardinal'+i,n,p(M.vec(i*90,0)),4,10,bright?'#e8f4ffd0':'#b7cfc4c4',40,.9));
  if(showLines){ctx.strokeStyle=bright?'#e8edff2e':'#99b0ff2c';ctx.lineWidth=.8;
   for(const group of patterns){let points=0;
    for(const path of group.paths){let prev=null;for(const s of path){const q=s&&s.alt>=0?p(s.v):null;
     if(q&&prev&&Math.hypot(q[0]-prev[0],q[1]-prev[1])<width*.8){ctx.beginPath();ctx.moveTo(...prev);ctx.lineTo(...q);ctx.stroke();}
     if(q&&q[0]>0&&q[0]<width&&q[1]>0&&q[1]<height)points++;prev=q;
    }}
-   if(points>2&&group!==selected){const anchor=group.constellation?group:byHip.get(62956);
-    label(group.id||'big-dipper',group.name,anchor.alt>=0?p(anchor.v):null,12,12,bright?'#e8f4ffb0':'#a9bae3b0',30+Math.min(points,10));
+   if(SkyLabels.showConstellationName(points,fov)&&group!==selected){const anchor=group.constellation?group:byHip.get(62956);
+    label(group.id||'big-dipper',group.name,anchor.alt>=0?p(anchor.v):null,10,11,bright?'#e7f2ffb8':'#c5d0ea9c',28+Math.min(points,8),.78);
    }
   }
  }
@@ -248,10 +248,10 @@ function render(){
    const angle=sunward?Math.atan2(sunward[1]-q[1],sunward[0]-q[0]):0,illum=Math.max(0,Math.min(1,s.phase));
    if(moonMap.complete&&moonMap.naturalWidth&&Number.isFinite(s.phaseAngle)){
     const key=Math.round(s.phaseAngle/2)*2;
-    const spriteSize=P.resolution(2*r*canvas.width/width);
-    if(!moonSprite||key!==moonSpritePhase||moonSprite.width<spriteSize){
-     try{moonSprite=document.createElement('canvas');moonSprite.width=moonSprite.height=spriteSize;SkyMoonSurface.draw(moonSprite,moonMap,key);moonSpritePhase=key;}
-     catch(e){moonSprite=null;}
+    // One filtered disc per phase. Pinch zoom only scales it, so the gesture frame does not rebuild the sphere.
+    if(!moonSprite||key!==moonSpritePhase){
+     try{moonSprite=document.createElement('canvas');moonSprite.width=moonSprite.height=384;SkyMoonSurface.draw(moonSprite,moonMap,key);moonSpritePhase=key;}
+     catch(e){moonSprite=null;moonSpritePhase=-1;}
     }
    }
    if(moonSprite){ctx.save();ctx.translate(q[0],q[1]);ctx.rotate(SkyMoonSurface.rotation(angle,s.phaseAngle));ctx.drawImage(moonSprite,-r,-r,2*r,2*r);ctx.restore();}
@@ -267,9 +267,9 @@ function render(){
   }else{ctx.beginPath();ctx.arc(q[0],q[1],r,0,Math.PI*2);ctx.fill();}
   if(!isBody&&s.mag<2){ctx.fillStyle='#f5faff';ctx.beginPath();ctx.arc(q[0],q[1],Math.max(.45,r*.48),0,Math.PI*2);ctx.fill();}
   if(s===selected){ctx.strokeStyle='#d3deff';ctx.lineWidth=1;ctx.beginPath();ctx.arc(q[0],q[1],r+10,0,Math.PI*2);ctx.stroke();}
-  if(isBody||s.mag<1.7||s===selected){
+  if(isBody||SkyLabels.showStarName(s.mag,ar?85:fov,s===selected)){
    symbol(q,r);
-   label(s.id,s.name,q,r+2,isBody||s===selected?12:11,bright?'#f6fbff':isBody?'#e5e7f0':'#b4c1dc',s===selected?100:isBody?80:60-s.mag,alpha);
+   label(s.id,s.name,q,r+2,s===selected?12:isBody?11:10,bright?'#f4f8ffcc':isBody?'#e7ebf4d8':'#c5d0e6c4',s===selected?100:isBody?80:60-s.mag,alpha);
   }
   hit.add(s,q[0],q[1]);ctx.globalAlpha=1;
  }
@@ -287,7 +287,7 @@ function render(){
  for(const s of starCells.query(basis,width,height,fov,limit))drawPoint(s);
  for(const s of bodies)drawPoint(s);
  if(selected&&!selected.color&&!selected.deepSky&&!selected.constellation&&selected.mag>limit)drawPoint(selected);
- if(selected&&selected.constellation){const q=p(selected.v);if(q){ctx.strokeStyle='#c9bcff';ctx.lineWidth=2;ctx.beginPath();ctx.arc(q[0],q[1],12,0,Math.PI*2);ctx.stroke();symbol(q,12);label(selected.id,selected.name,q,14,13,'#e7dfff',100);}}
+ if(selected&&selected.constellation){const q=p(selected.v);if(q){ctx.strokeStyle='#c9bcff';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(q[0],q[1],12,0,Math.PI*2);ctx.stroke();symbol(q,12);label(selected.id,selected.name,q,12,12,'#e7dfff',100);}}
  // Catalog magnitudes of extended objects are integrated values; only draw a modest symbol.
  for(const s of deepSky){
   if((cfg.horizon||ar)&&s.alt<0)continue;
@@ -295,7 +295,7 @@ function render(){
   const q=p(s.v);if(!q||q[0]<-12||q[0]>width+12||q[1]<-12||q[1]>height+12)continue;
   ctx.globalAlpha=s.alt<0?.27:1;ctx.strokeStyle='#70d9ca';ctx.lineWidth=s===selected?2:1;
   const size=s===selected?7:4;ctx.beginPath();ctx.moveTo(q[0],q[1]-size);ctx.lineTo(q[0]+size,q[1]);ctx.lineTo(q[0],q[1]+size);ctx.lineTo(q[0]-size,q[1]);ctx.closePath();ctx.stroke();
-  symbol(q,size);label(s.id,s.designation,q,size,11,'#9ad8d0',s===selected?100:45-s.mag,s.alt<0?.27:1);
+  symbol(q,size);if(SkyLabels.showDeepSkyName(fov,s===selected))label(s.id,s.designation,q,size,10,'#b7e4dc',s===selected?100:42-s.mag,(s.alt<0?.27:1)*.9);
   hit.add(s,q[0],q[1]);ctx.globalAlpha=1;
  }
  if(issSnapshot&&offset===0&&Date.now()-issSnapshot.timestamp<12000&&issSnapshot.alt>=0){
@@ -316,8 +316,15 @@ function render(){
  }else $('target').textContent='';
  // One priority-ordered pass shares occupied regions across every label type.
  const placed=SkyLabels.layout(skyLabels,width,height,labelObstacles(),symbolBoxes);
- ctx.save();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';ctx.lineWidth=3;ctx.strokeStyle='#010409c9';
- for(const l of placed){ctx.font=l.size+'px system-ui';ctx.globalAlpha=l.alpha;ctx.fillStyle=l.color;if(l.inline){ctx.save();ctx.translate(l.textX,l.textY);ctx.rotate(l.angle);ctx.textBaseline='middle';ctx.strokeText(l.name,0,0);ctx.fillText(l.name,0,0);ctx.restore();}else{ctx.strokeText(l.name,l.textX,l.textY);ctx.fillText(l.name,l.textX,l.textY);}}
+ ctx.save();ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.lineJoin='round';ctx.lineWidth=1.5;ctx.strokeStyle='#08101873';
+ if('letterSpacing' in ctx)ctx.letterSpacing='0.35px';
+ for(const l of placed){
+  let fade=l.alpha;
+  if((l.priority||0)<70){const dx=l.textX-width/2,dy=l.textY-height/2,t=Math.hypot(dx,dy)/(Math.hypot(width,height)*.5);fade*=Math.max(.45,1-Math.max(0,t-.7)*1.6);}
+  ctx.font='500 '+l.size+'px system-ui';ctx.globalAlpha=fade;ctx.fillStyle=l.color;
+  if(l.inline){ctx.save();ctx.translate(l.textX,l.textY);ctx.rotate(l.angle);ctx.textBaseline='middle';ctx.strokeText(l.name,0,0);ctx.fillText(l.name,0,0);ctx.restore();}
+  else{ctx.strokeText(l.name,l.textX,l.textY);ctx.fillText(l.name,l.textX,l.textY);}
+ }
  ctx.restore();
 }
 function canRefreshIss(){return !cfg.place.includes('示例')&&issSheetVisible()&&!!window.NativeSky&&typeof NativeSky.fetchIss==='function';}
@@ -331,7 +338,8 @@ function nextMaintenance(){
  const time=Date.now(),display=time+offset,minute=60000-((display%60000)+60000)%60000;
  return Math.min(lastCalc>time?time:lastCalc+30000,time+minute,issSnapshot?issSnapshot.timestamp+12000:Infinity,canRefreshIss()&&!issLoading?lastIssRequest+8000:Infinity);
 }
-skyRuntime=SkyRuntime.create({draw:()=>{if(!document.hidden&&!chartPaused)render();},tick:maintenance,deadline:nextMaintenance});
+let chartInteracting=false;
+skyRuntime=SkyRuntime.create({draw:()=>{if(!document.hidden&&!chartPaused)render();},tick:maintenance,deadline:nextMaintenance,frameBudget(){return chartInteracting?16:32;}});
 function stopTrack(){if(ar||arPending)exitAR();tracking=false;roll=0;if(window.NativeSky)NativeSky.track(false);sync();}
 function nativeReady(){
  if(!window.NativeSky)return;
@@ -367,14 +375,16 @@ function moveSky(from,to,scale=1){
  if(tracking)stopTrack();roll=0;fov=M.zoomFov(fov,scale);
  const next=M.anchoredView(v,to.x,to.y,width,height,fov,az,alt);az=next.az;alt=next.alt;invalidateSky();
 }
-function clearSkyPointers(){pointers.clear();moved=false;multiTouch=false;}
+function clearSkyPointers(){pointers.clear();moved=false;multiTouch=false;chartInteracting=false;}
 canvas.onpointerdown=e=>{
  if(e.button!==undefined&&e.button!==0)return;
+ if(typeof e.preventDefault==='function')e.preventDefault();
  if(!pointers.size){moved=false;multiTouch=false;}else multiTouch=true;
- const [x,y]=skyPoint(e);pointers.set(e.pointerId,{x,y,startX:x,startY:y});if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
+ const [x,y]=skyPoint(e);pointers.set(e.pointerId,{x,y,startX:x,startY:y});chartInteracting=true;if(canvas.setPointerCapture)canvas.setPointerCapture(e.pointerId);
 };
 canvas.onpointermove=e=>{
  const old=pointers.get(e.pointerId);if(!old)return;
+ if(typeof e.preventDefault==='function')e.preventDefault();
  const before=pinchFrame(),[x,y]=skyPoint(e);pointers.set(e.pointerId,{...old,x,y});
  if(Math.hypot(x-old.startX,y-old.startY)>7)moved=true;
  if(!moved||ar||pointers.size>2)return;
@@ -383,11 +393,11 @@ canvas.onpointermove=e=>{
 };
 canvas.onpointerup=e=>{
  const p=pointers.get(e.pointerId);if(!p)return;const [x,y]=skyPoint(e);
- const tap=!moved&&!multiTouch&&pointers.size===1&&Math.hypot(x-p.startX,y-p.startY)<=7;pointers.delete(e.pointerId);
+ const tap=!moved&&!multiTouch&&pointers.size===1&&Math.hypot(x-p.startX,y-p.startY)<=7;pointers.delete(e.pointerId);chartInteracting=pointers.size>0;
  if(tap){const nearest=hit.nearest(x,y);if(nearest)selection(nearest);else{selected=null;$('selection').hidden=true;$('hint').hidden=false;invalidateHud();}}
  if(!pointers.size)clearSkyPointers();
 };
-function cancelSkyPointer(e){if(!pointers.has(e.pointerId))return;moved=true;pointers.delete(e.pointerId);if(!pointers.size)clearSkyPointers();}
+function cancelSkyPointer(e){if(!pointers.has(e.pointerId))return;moved=true;pointers.delete(e.pointerId);chartInteracting=pointers.size>0;if(!pointers.size)clearSkyPointers();}
 canvas.onpointercancel=cancelSkyPointer;canvas.onlostpointercapture=cancelSkyPointer;
 window.addEventListener('blur',clearSkyPointers);window.addEventListener('resize',clearSkyPointers);
 document.addEventListener('visibilitychange',()=>{if(document.hidden)clearSkyPointers();});
@@ -464,7 +474,7 @@ function showSurface(bodyId){
   try{const cssWidth=disc.getBoundingClientRect().width||320,size=touches.size?256:Math.min(1024,Math.max(512,Math.ceil(cssWidth*Math.min(devicePixelRatio||1,2))));
    if(disc.width!==size)disc.width=disc.height=size;
    if(solar)solarRenderer.draw(disc,view,seconds);else if(saturnian)SkySaturn.draw(disc,image,view);else SkyMoonSurface.draw(disc,image,phase,view);
-   if(lunar){moonMarkers=featureLabels?SkyMoonFeatures.visible(MOON_FEATURE_DATA,view,cssWidth,cssWidth,phase):[];if(moonMarkers.length){const c=disc.getContext('2d'),density=size/cssWidth;c.save();c.scale(density,density);SkyMoonFeatures.draw(c,moonMarkers,cssWidth,cssWidth,selectedFeature?.id,SkyLabels);c.restore();}}
+   if(lunar){moonMarkers=featureLabels?SkyMoonFeatures.visible(MOON_FEATURE_DATA,view,cssWidth,cssWidth,phase):[];if(moonMarkers.length){const c=disc.getContext('2d'),density=size/cssWidth;c.save();c.scale(density,density);SkyMoonFeatures.draw(c,moonMarkers,cssWidth,cssWidth,selectedFeature?.id,SkyLabels,view.zoom);c.restore();}}
   }catch(e){failed=true;if(animation)animation.stop();status.textContent=feedback.textContent='表面绘制失败，请重新打开。';feedback.hidden=false;}
  }
  function refreshMotion(){if(!animation)return;if(!disposed&&!surfacePaused&&!document.hidden&&loaded&&!failed&&inViewport&&disc.isConnected&&$('sheet').open&&!paused&&view.glow&&view.zoom<1.8&&!touches.size)animation.start();else animation.stop();}
@@ -630,7 +640,7 @@ function maybeCheckUpdate(){
 }
 function showUpdate(){
  const b=openSheet('应用更新');updateStatus=el('div',undefined,'copy');
- b.append(el('div','STARLIGHT 0.3.44 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
+ b.append(el('div','STARLIGHT 0.3.45 / 更新','tag'),el('p','可以联网检查 GitHub 上的新版。下载后的 APK 会在本机验证摘要、包名和签名，然后由 Android 系统确认安装；观测记录保留在本机。','copy'),updateStatus);
  if(!window.NativeSky||!NativeSky.checkUpdate){updateStatus.textContent='请在安卓 App 内使用检查更新。';return;}
  if(NativeSky.hasVerifiedUpdate&&NativeSky.hasVerifiedUpdate())b.append(button('安装已下载并验证的版本',()=>NativeSky.installUpdate(),'secondary'));
  b.append(button('检查新版本',()=>{manualUpdate=true;updateStatus.replaceChildren(el('p','正在连接 GitHub 检查版本…','copy'));NativeSky.checkUpdate();},'primary'));
@@ -650,7 +660,7 @@ function appendArtControl(parent){
  range.oninput=()=>{cfg.artStrength=Math.max(0,Math.min(.6,Number(range.value)/100));label.textContent='插画亮度 · '+Math.round(cfg.artStrength*100)+'%';invalidateSky();};range.onchange=()=>{range.oninput();save();};
  parent.append(label,range,el('p','放大时插画会逐渐淡出；有对应插画时，选中的星座或恒星所属星座会突出。降低亮度可以让星点和连线更清楚。','copy'));
 }
-$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.44 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.horizon?'关闭地平遮挡 · 探索下方天体':'开启地平遮挡',()=>{cfg.horizon=!cfg.horizon;save();invalidateSky();$('help').click();},'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();invalidateSky();$('help').click();},'secondary'),button(cfg.galaxy?'隐藏银河摄影':'显示银河摄影',()=>{cfg.galaxy=!cfg.galaxy;save();invalidateSky();$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();invalidateSky();$('help').click();},'secondary'));appendArtControl(b);for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放时目标会随手势中心移动；拖动或双指操作会进入自由探索。点击右侧准星可恢复手机自动跟随，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理和放大示意尺寸，不用于精确月面定位；银河摄影来自 ESO/S. Brunier 的 4000×2000 全景，随地点、时间与视角投影；它是历史长曝光照片，不代表眼前天空或肉眼亮度，照片星点不能点选，识星仍以星表标记为准。不支持该渲染或关闭摄影时显示程序云气；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮显示 J2000 赤道网格与视场圆环；红色虚线为赤道，黄色为 J2000 黄道，绿色为 0h/12h 赤经参考线；赤经、赤纬刻度沿可见网格线标注，缩放会调整疏密，极区减少汇聚的经线；网格采用与恒星相同的坐标变换，不含折射；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界；随放大逐渐淡出，选中的星座或亮星所属星座会突出，帮助页可调亮度。银河全景：ESO/S. Brunier，CC BY 4.0；来源 https://www.eso.org/public/images/eso0932a/ ，许可 https://creativecommons.org/licenses/by/4.0/ 。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
+$('help').onclick=()=>{const b=openSheet('把整个星空装进口袋');b.append(el('div','STARLIGHT 0.3.45 / 免费 · 联网观星','tag'),button('检查更新',showUpdate,'secondary'),button(cfg.horizon?'关闭地平遮挡 · 探索下方天体':'开启地平遮挡',()=>{cfg.horizon=!cfg.horizon;save();invalidateSky();$('help').click();},'secondary'),button(cfg.art?'隐藏星座插画':'显示星座插画',()=>{cfg.art=!cfg.art;save();invalidateSky();$('help').click();},'secondary'),button(cfg.galaxy?'隐藏银河摄影':'显示银河摄影',()=>{cfg.galaxy=!cfg.galaxy;save();invalidateSky();$('help').click();},'secondary'),button(cfg.atmosphere?'关闭昼夜大气 · 展示完整星图':'开启真实昼夜大气',()=>{cfg.atmosphere=!cfg.atmosphere;save();invalidateSky();$('help').click();},'secondary'));appendArtControl(b);for(const text of ['右侧「净空」可收起控件，点击「返回」恢复；方向、当前时间和目标仍会保留。系统开启自动旋转后可横屏或竖屏观星。拖动星图探索，双指缩放时目标会随手势中心移动；拖动或双指操作会进入自由探索。点击右侧准星可恢复手机自动跟随，手机背面指向天空。方向传感器需要真机支持，请远离磁性物品。方向由传感器自动计算；齿轮可查看方向状态。','先设置位置。星图默认展示北京示例天空，未设置位置时不能用于当地识星。','默认增强星图在白天也展示恒星，便于探索，不代表肉眼可见；可在此开启昼夜大气模拟。AR 始终使用实际太阳高度控制星点明暗。亮星带有柔和光晕与示意光芒，微弱星点做了屏幕可读性增强；月亮图案使用月面纹理、分级采样和放大示意尺寸，不用于精确月面定位；银河摄影来自 ESO/S. Brunier 的 4000×2000 全景，随地点、时间与视角投影；它是历史长曝光照片，不代表眼前天空或肉眼亮度，照片星点不能点选，识星仍以星表标记为准。不支持该渲染或关闭摄影时显示程序云气；M31、M33、M8、M42 的紫外或红外观测图像会放大叠加，仅供辨认；资料页可打开观测图查看器，双指放大与拖动查看，不代表肉眼颜色、真实大小或朝向；右侧网格按钮显示 J2000 赤道网格与视场圆环；红色虚线为赤道，黄色为 J2000 黄道，绿色为 0h/12h 赤经参考线；赤经、赤纬刻度沿可见网格线标注，缩放会调整疏密，极区减少汇聚的经线；网格采用与恒星相同的坐标变换，不含折射；云量等模型预报可在观测计划页联网查看，不含光污染预测。搜索天体并定位；开启手机指向时会按目标在屏幕上的方位提示方向，目标在画面外时显示边缘箭头。地平线下方的天体以暗色显示，实际天空不可见。','此版本收录 15,598 颗 7 等及更亮的恒星、110 个梅西耶深空目标，计算太阳、月亮与八个地外行星/矮行星。提供 86 个星座连线和北斗七星星群连线，88 个星座均可搜索定位参考中心。','这是独立开发的免费预览版，与 Night Sky 无隶属关系。相机 AR 为实验性的方向传感器叠加，尚不含空间识别、行星 AR 模型、卫星过境预测、云端十亿星库、AI、光污染地图、空间音频或多人同步。手机性能、相机兼容性与方向精度尚待真机测试。','数据：HYG v4.1（CC BY-SA 4.0）；星座连线：johanley（CC0）；星座名称及中心：d3-celestial（BSD 3-Clause）；梅西耶目录：Bretton Wade（MIT，坐标近似 J2000）；天文计算：Astronomy Engine 2.1.19（MIT）。85 个星座插画：Johan Meuris / Stellarium，Free Art License；定位数据：Stellarium，CC BY-SA。插画是艺术示意，不是星座边界；随放大逐渐淡出，选中的星座或亮星所属星座会突出，帮助页可调亮度。银河全景：ESO/S. Brunier，CC BY 4.0；来源 https://www.eso.org/public/images/eso0932a/ ，许可 https://creativecommons.org/licenses/by/4.0/ 。完整许可随源码提供。'])b.append(el('p',text,'copy'));};
 function exportBackup(){
  const text=SkyBackup.encode(notes);
  if(window.NativeSky&&NativeSky.exportNotes){NativeSky.exportNotes(text);return;}

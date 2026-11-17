@@ -31,5 +31,16 @@
   }
   return placed;
  }
- const api={layout};root.SkyLabels=api;if(typeof module!=='undefined')module.exports=api;
+ // Wide fields keep only the brightest names; zooming reveals the next tier.
+ function starMagnitudeLimit(fov){
+  if(!Number.isFinite(fov)||fov<=0)return 1.7;
+  if(fov>82)return .8;if(fov>60)return 1.2;if(fov>40)return 1.7;if(fov>24)return 2.15;return 2.6;
+ }
+ function showStarName(magnitude,fov,selected){return !!selected||Number.isFinite(magnitude)&&magnitude<starMagnitudeLimit(fov);}
+ function showConstellationName(points,fov){
+  if(!Number.isFinite(points)||!Number.isFinite(fov))return false;
+  return points>=(fov>82?14:fov>60?8:fov>40?5:3);
+ }
+ function showDeepSkyName(fov,selected){return !!selected||Number.isFinite(fov)&&fov<=52;}
+ const api={layout,starMagnitudeLimit,showStarName,showConstellationName,showDeepSkyName};root.SkyLabels=api;if(typeof module!=='undefined')module.exports=api;
 })(typeof window!=='undefined'?window:globalThis);

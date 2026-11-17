@@ -92,7 +92,7 @@ run('tracking=false; selected=starsByMagnitude.find(s=>s.mag>6&&s.alt>10);az=sel
 run('cfg.art=true;dirty=true;render()');assert(run('artwork.filter(a=>a.image).length<=12'));run('cfg.art=false;dirty=true;render()');assert.equal(run('artwork.filter(a=>a.image).length'),0);
 run("details(byId.get('Moon'))");clickText('查看月面细节');assert(body().querySelector('canvas.moon-surface'));assert(text().includes('未模拟天平动'));click('close');
 run("cfg.horizon=false;let moonDraws=0;Object.defineProperty(moonMap,'complete',{configurable:true,value:true});Object.defineProperty(moonMap,'naturalWidth',{configurable:true,value:2048});SkyMoonSurface.draw=()=>{moonDraws++};tracking=false;az=bodies[1].az;alt=bodies[1].alt;dirty=true;render();dirty=true;render()");
-assert.equal(run('moonDraws'),1,'sky-map Moon sprite should reuse a cached phase');
+assert.equal(run('moonDraws'),1,'sky-map Moon sprite should reuse a cached phase');assert.equal(run('moonSprite.width'),384);
 run('bodies[1].phaseAngle+=4;dirty=true;render()');assert.equal(run('moonDraws'),2,'changed phase should redraw the sprite');
 // Folding the chrome must retain the target, time, field of view and tracking state.
 const viewingState=run('[selected.id,offset,fov,tracking].join("/")');
