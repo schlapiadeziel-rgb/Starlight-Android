@@ -97,3 +97,6 @@ nav button span{display:flex;align-items:center;justify-content:center}
 @media(max-width:420px){.planet-atlas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
 #reminderLead{width:100%;min-height:46px;background:#080f20;color:var(--ink);border:1px solid #ffffff25;border-radius:12px;padding:10px 12px;margin:6px 0 13px;font:inherit}button:disabled{opacity:.5;cursor:default}button:disabled:active{transform:none}
+
+.row-summary{min-width:0;overflow-wrap:anywhere}.row-actions{display:flex;gap:6px;flex-shrink:0}.row-actions button{white-space:nowrap;min-width:48px}.row-actions button:last-child{border-color:#bbcaff70;color:var(--accent)}@media(max-width:420px){.row-actions{flex-direction:column}.row{gap:10px}}
+.search-horizon[aria-pressed=true]{border-color:var(--accent);color:var(--accent);background:#bbcaff16}

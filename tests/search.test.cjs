@@ -6,7 +6,14 @@ for(const query of ['M31','m 31','Ｍ３１','M-031','NGC224','ngc 224','NGC-022
 assert.deepEqual(search.query('M3'),[m3],'exact identifiers must not also match M31');
 assert.deepEqual(search.query('仙女'),[m31,con]);assert.deepEqual(search.query('sIrIuS'),[star]);
 assert.deepEqual(search.query('andromeda galaxy'),[m31]);assert.deepEqual(search.query('CMa'),[star]);
+assert.deepEqual(search.query('Andromeda'),[con,m31],'exact constellation names precede galaxy name prefixes');
+assert.deepEqual(search.query('仙女座'),[con,m31]);
+const exact={name:'织女星'},prefix={name:'织女星伴星'},inside={name:'测试织女星'},metadata={name:'其他',con:'织女星'};
+assert.deepEqual(S.create([metadata,inside,prefix,exact]).query('织女星'),[exact,prefix,inside,metadata]);
+const many=Array.from({length:75},(_,i)=>({name:'织女星候选'+i}));
+assert.equal(S.create([...many,exact]).query('织女星')[0],exact,'exact names remain visible when weaker matches exceed 60');
+assert.deepEqual(S.create([prefix,...many]).query('织女星').slice(0,3),[prefix,many[0],many[1]],'equal ranks preserve catalog order');
 for(const query of ['', '  ', 'HIP0','M999','undefined','NGCundefined'])assert.deepEqual(search.query(query),[]);
 const result=search.query('M31');result.length=0;assert.deepEqual(search.query('M31'),[m31],'callers cannot mutate the cached identifier list');
 let reads=0;const measured={get name(){reads++;return '月亮';},en:'Moon'};const cached=S.create([measured]);const initial=reads;for(let i=0;i<100;i++)assert.equal(cached.query('月亮')[0],measured);assert.equal(reads,initial,'queries reuse normalized names');
-console.log('PASS: exact HIP/M/NGC identifiers, whitespace, full-width text, leading zeroes, names, order, missing IDs and cached normalization.');
+console.log('PASS: exact HIP/M/NGC identifiers, whitespace, full-width text, leading zeroes, names, stable relevance ranking, 60-result visibility, missing IDs and cached normalization.');
